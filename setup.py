@@ -2,8 +2,8 @@ from setuptools import setup, find_packages
 
 setup(
     name="refpy",
-    version="0.1.0",
-    description="Library of pipeline calculations",
+    version="0.1.4",
+    description="Package for subsea pipelines and risers design in Python",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url="https://github.com/refpy/refpy",
@@ -18,7 +18,7 @@ setup(
     python_requires='>=3.11',
     install_requires=[],
     project_urls={
-        "Documentation": "https://github.com/refpy/refpy/wiki",
+        "Documentation": "https://refpy.github.io/refpy",
         "Source": "https://github.com/refpy/refpy",
         "Tracker": "https://github.com/refpy/refpy/issues",
     }
