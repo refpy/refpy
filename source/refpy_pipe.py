@@ -2,6 +2,8 @@
 Library of pipeline main properties
 '''
 
+import numpy as np
+
 def calc_inner_diameter(outer_diameter, wall_thickness):
     """
     Calculate the pipe inner diameter
