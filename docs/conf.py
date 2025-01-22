@@ -14,35 +14,22 @@ sys.path.insert(0, os.path.abspath("../source"))
 project = 'RefPy'
 copyright = '2025, Ismael Ripoll'
 author = 'Ismael Ripoll'
-release = 'v0.1'
+release = 'v0.1.3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = [
+    'sphinx.ext.autodoc',
+]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-# Napoleon settings
-napoleon_google_docstring = False
-napoleon_numpy_docstring = True
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'classic'
+html_theme = 'alabaster'
 html_static_path = ['_static']
-
-html_baseurl = "https://refpy.github.io/refpy/"
-
-html_sidebars = {
-  "**": []
-}
-
-html_theme_options = {
-    "logo": {
-        "image_light": "_static/logo.png",
-        "image_dark": "_static/logo_dark.png",
-    },
-}

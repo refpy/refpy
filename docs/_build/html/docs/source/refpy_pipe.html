@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>refpy_pipe module &#8212; RefPy v0.1.3 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=12dfc556" />
+    <script src="../../_static/documentation_options.js?v=cdbf2762"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-refpy_pipe">
+<span id="refpy-pipe-module"></span><h1>refpy_pipe module<a class="headerlink" href="#module-refpy_pipe" title="Link to this heading">¶</a></h1>
+<p>Library of pipeline main properties</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_area_moment_inertia">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_area_moment_inertia</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_area_moment_inertia" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the area moment inertia</p>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>area_moment_inertia<span class="classifier">float</span></dt><dd><p>Area moment inertia</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_axial_stiffness">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_axial_stiffness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">youngs_modulus</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_axial_stiffness" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the axial stiffness</p>
+<section id="id1">
+<h2>Parameters<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+<dt>youngs_modulus<span class="classifier">float</span></dt><dd><p>Young’s modulus of the material</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h2>Returns<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>axial_stiffness<span class="classifier">float</span></dt><dd><p>Axial stiffness of the pipe</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_bending_stiffness">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_bending_stiffness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">youngs_modulus</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_bending_stiffness" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the bending stiffness</p>
+<section id="id3">
+<h2>Parameters<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+<dt>youngs_modulus<span class="classifier">float</span></dt><dd><p>Young’s modulus</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h2>Returns<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>bending_stiffness<span class="classifier">float</span></dt><dd><p>Bending stiffness</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_coating_area">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_coating_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coating_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_coating_area" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the coating cross-sectional area</p>
+<section id="id5">
+<h2>Parameters<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the steel pipe</p>
+</dd>
+<dt>coating_thickness<span class="classifier">float</span></dt><dd><p>Coating wall thickness</p>
+</dd>
+</dl>
+</section>
+<section id="id6">
+<h2>Returns<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>coating_area<span class="classifier">float</span></dt><dd><p>Coating cross-sectional area</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_eaf">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_eaf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">young_modulus</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poisson</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expansion_coefficient</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature_installation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pressure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_eaf" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the effective axial force</p>
+<section id="id7">
+<h2>Parameters<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+<dt>young_modulus<span class="classifier">float</span></dt><dd><p>Young’s modulus</p>
+</dd>
+<dt>poisson<span class="classifier">float</span></dt><dd><p>Poisson’s ratio</p>
+</dd>
+<dt>expansion_coefficient<span class="classifier">float</span></dt><dd><p>Thermal expansion coefficient</p>
+</dd>
+<dt>temperature_installation<span class="classifier">float</span></dt><dd><p>Installation temperature</p>
+</dd>
+<dt>pressure<span class="classifier">float</span></dt><dd><p>Loadcase pressure</p>
+</dd>
+<dt>temperature<span class="classifier">float</span></dt><dd><p>Loadcase temperature</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h2>Returns<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>effective_axial_force<span class="classifier">float</span></dt><dd><p>The effective axial force</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_inner_area">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_inner_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_inner_area" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the pipe inner area</p>
+<section id="id9">
+<h2>Parameters<a class="headerlink" href="#id9" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h2>Returns<a class="headerlink" href="#id10" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>inner_area<span class="classifier">float</span></dt><dd><p>Inner area of the pipe</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_inner_diameter">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_inner_diameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_inner_diameter" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the pipe inner diameter</p>
+<section id="id11">
+<h2>Parameters<a class="headerlink" href="#id11" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h2>Returns<a class="headerlink" href="#id12" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>inner_diameter<span class="classifier">float</span></dt><dd><p>Inner diameter of the pipe</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_outer_area">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_outer_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_outer_area" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the pipe outer area</p>
+<section id="id13">
+<h2>Parameters<a class="headerlink" href="#id13" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+</dl>
+</section>
+<section id="id14">
+<h2>Returns<a class="headerlink" href="#id14" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_area<span class="classifier">float</span></dt><dd><p>Outer area of the pipe</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_steel_area">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_steel_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_steel_area" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the steel cross-sectional area</p>
+<section id="id15">
+<h2>Parameters<a class="headerlink" href="#id15" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the pipe</p>
+</dd>
+<dt>wall_thickness<span class="classifier">float</span></dt><dd><p>Wall thickness of the pipe</p>
+</dd>
+</dl>
+</section>
+<section id="id16">
+<h2>Returns<a class="headerlink" href="#id16" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>steel_area<span class="classifier">float</span></dt><dd><p>Steel cross-sectional area</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_total_outer_area">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_total_outer_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coating_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_total_outer_area" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the outer area of steel and coating</p>
+<section id="id17">
+<h2>Parameters<a class="headerlink" href="#id17" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the steel pipe</p>
+</dd>
+<dt>coating_thickness<span class="classifier">float</span></dt><dd><p>Coating wall thickness</p>
+</dd>
+</dl>
+</section>
+<section id="id18">
+<h2>Returns<a class="headerlink" href="#id18" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>total_outer_area<span class="classifier">float</span></dt><dd><p>Outer area of steel and coating</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="refpy_pipe.calc_total_outer_diameter">
+<span class="sig-prename descclassname"><span class="pre">refpy_pipe.</span></span><span class="sig-name descname"><span class="pre">calc_total_outer_diameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_diameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coating_thickness</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#refpy_pipe.calc_total_outer_diameter" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the total outer diameter of steel and coating</p>
+<section id="id19">
+<h2>Parameters<a class="headerlink" href="#id19" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>outer_diameter<span class="classifier">float</span></dt><dd><p>Outer diameter of the steel pipe</p>
+</dd>
+<dt>coating_thickness<span class="classifier">float</span></dt><dd><p>Coating wall thickness</p>
+</dd>
+</dl>
+</section>
+<section id="id20">
+<h2>Returns<a class="headerlink" href="#id20" title="Link to this heading">¶</a></h2>
+<dl class="simple">
+<dt>total_outer_diameter<span class="classifier">float</span></dt><dd><p>Total outer diameter of steel and coating</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">RefPy</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Ismael Ripoll.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.2.6</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="../../_sources/docs/source/refpy_pipe.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
