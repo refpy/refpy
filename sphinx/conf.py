@@ -34,6 +34,8 @@ napoleon_numpy_docstring = True
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['./_static/']
 
+html_baseurl = "https://refpy.github.io/refpy/"
+
 html_sidebars = {
   "**": []
 }
