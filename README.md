@@ -3,7 +3,7 @@
 RefPy is a package for the design of subsea pipelines and risers in Python
 
 * Website: https://www.refpy.org
-* Documentation: https://refpy.github.io/refpy/
+* Documentation: https://refpy.github.io/
 * Source code: https://github.com/refpy/refpy
 * Bug reports: https://github.com/refpy/refpy/issues
 
