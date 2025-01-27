@@ -37,6 +37,6 @@ How to Contribute to the Project
 Contents
 ########
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
-   modules
+   refpy

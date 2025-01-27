@@ -1,0 +1,13 @@
+# Ignore Python Bytecode Files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore PyPi Files
+setup.py
+build/
+dist/
+refpy.egg-info/
+
+# Ignore Sphinx Files
+docs/_build/

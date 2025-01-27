@@ -29,19 +29,20 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=cf56ce1b" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="_static/documentation_options.js?v=34cd777e"></script>
+    <script src="_static/documentation_options.js?v=b32bce50"></script>
     <script src="_static/doctools.js?v=888ff710"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="API Reference" href="modules.html" />
+    <link rel="next" title="API Reference" href="refpy.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -135,7 +136,7 @@
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="modules.html">
+                      <a class="nav-link nav-internal" href="refpy.html">
                         API Reference
                       </a>
                     </li>
@@ -175,6 +176,22 @@ document.write(`
 `);
 </script></div>
       
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/refpy/refpy/" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fab fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
     </div>
     
   </div>
@@ -211,7 +228,7 @@ document.write(`
       
         
       
-      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+      <div class="bd-sidebar-primary bd-sidebar">
         
 
   
@@ -225,7 +242,7 @@ document.write(`
   <ul class="bd-navbar-elements navbar-nav">
     
                     <li class="nav-item">
-                      <a class="nav-link nav-internal" href="modules.html">
+                      <a class="nav-link nav-internal" href="refpy.html">
                         API Reference
                       </a>
                     </li>
@@ -251,9 +268,45 @@ document.write(`
 `);
 </script></div>
         
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/refpy/refpy/" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fab fa-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
       </div>
     
   </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+    </div>
   
   
   <div class="sidebar-primary-items__end sidebar-primary__section">
@@ -312,9 +365,32 @@ with the code, please add it in <a class="reference external" href="https://gith
 <h1>Contents<a class="headerlink" href="#contents" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="refpy_pipe.html">1. Pre-Processing Module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="refpy_lb.html">2. Variables Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="refpy.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipe_properties.html">Pipe Properties</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.inner_diameter"><code class="docutils literal notranslate"><span class="pre">inner_diameter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.inner_area"><code class="docutils literal notranslate"><span class="pre">inner_area()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.outer_area"><code class="docutils literal notranslate"><span class="pre">outer_area()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.steel_area"><code class="docutils literal notranslate"><span class="pre">steel_area()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.total_outer_diameter"><code class="docutils literal notranslate"><span class="pre">total_outer_diameter()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.total_outer_area"><code class="docutils literal notranslate"><span class="pre">total_outer_area()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.coating_area"><code class="docutils literal notranslate"><span class="pre">coating_area()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.axial_stiffness"><code class="docutils literal notranslate"><span class="pre">axial_stiffness()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.area_moment_inertia"><code class="docutils literal notranslate"><span class="pre">area_moment_inertia()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipe_properties.html#refpy.pipe_properties.bending_stiffness"><code class="docutils literal notranslate"><span class="pre">bending_stiffness()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="lateral_buckling.html">Lateral Buckling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="lateral_buckling.html#refpy.lateral_buckling.friction_distribution"><code class="docutils literal notranslate"><span class="pre">friction_distribution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pipe_soil_interaction.html">Pipe-Soil Interaction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pipe_soil_interaction.html#refpy.pipe_soil_interaction.downward_undrained_model1"><code class="docutils literal notranslate"><span class="pre">downward_undrained_model1()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="limit_states.html">Limit States</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="limit_states.html#refpy.limit_states.lcc"><code class="docutils literal notranslate"><span class="pre">lcc()</span></code></a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -332,7 +408,7 @@ with the code, please add it in <a class="reference external" href="https://gith
                   
 <div class="prev-next-area">
     <a class="right-next"
-       href="modules.html"
+       href="refpy.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
@@ -406,14 +482,6 @@ with the code, please add it in <a class="reference external" href="https://gith
       © Copyright 2025, Ismael Ripoll.
       <br/>
     
-  </p>
-</div>
-      
-        <div class="footer-item">
-
-  <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
-    <br/>
   </p>
 </div>
       

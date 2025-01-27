@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: refpy
-Version: 0.1.4
+Version: 0.1.5
 Summary: Package for subsea pipelines and risers design in Python
 Home-page: https://github.com/refpy/refpy
 Author: ismael-ripoll
@@ -43,7 +43,7 @@ The RefPy project welcomes your expertise and enthusiasm!
 
 Small improvements or fixes are always appreciated. If you are considering larger contributions to the source code, please leave a comment on GitHub first.
 
-Writing code isnâ€™t the only way to contribute to RefPy. You can also:
+Writing code is not the only way to contribute to RefPy. You can also:
 
 * review pull requests
 * help us stay on top of new and old issues

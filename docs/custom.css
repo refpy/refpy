@@ -1,0 +1,21 @@
+/* Light mode (default) styles */
+dl.function > dt {
+    background-color: rgba(243, 207, 149, 0.5); /* Light yellow with transparency */
+    padding: 5px;
+    border-radius: 3px;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+    dl.function > dt {
+        background-color: rgba(243, 207, 149, 0.7); /* Darker yellow with more opacity */
+        color: #fff;  /* Change text color to white for better contrast */
+    }
+}
+
+/* Add a horizontal line between function blocks */
+dl.function + dl.function {
+    border-top: 1px solid #cccccc;  /* Light grey line between functions */
+    margin-top: 20px;               /* Add space above the line */
+    padding-top: 10px;              /* Add space below the line */
+}

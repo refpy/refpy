@@ -5,6 +5,6 @@ API Reference
    :maxdepth: 4
 
    pipe_properties
-   limit_states
    lateral_buckling
    pipe_soil_interaction
+   limit_states
