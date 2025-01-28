@@ -4,6 +4,30 @@ Library of pipeline main properties
 
 import numpy as np
 
+def wall_thickness_corroded(wall_thickness: np.ndarray,
+                            corrosion_allowance: np.ndarray) -> np.ndarray:
+    """
+    Calculate the corroded wall thickness.
+
+    Parameters
+    ----------
+    wall_thickness : np.ndarray
+        Wall thickness of the pipe.
+    corrosion_allowance : np.ndarray
+        Corrosion allowance of the pipe.
+
+    Returns
+    -------
+    corroded_wall_thickness : np.ndarray
+        Corroded wall thickness of the pipe.
+
+    Examples
+    --------
+    >>> corroded_wall_thickness(np.array([0.0127, 0.0159]), np.array([0.003, 0.003]))
+    array([0.0097, 0.0129])
+    """
+    return wall_thickness - corrosion_allowance
+
 def inner_diameter(outer_diameter: np.ndarray, wall_thickness: np.ndarray) -> np.ndarray:
     """
     Calculate the pipe inner diameter.

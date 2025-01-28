@@ -12,4 +12,4 @@ from .lateral_buckling import *
 from .pipe_soil_interaction import *
 
 # Library of limit state calculations
-from .limit_states import *
+from .limit_states_dnv import *
