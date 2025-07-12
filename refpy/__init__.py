@@ -2,14 +2,17 @@
 Library of pipeline calculations 
 '''
 
-# Library of linepipe calculations
-from .pipe_properties import *
+from .pipe_properties import Pipe
+from .dnv_limit_states import DNVLimitStates
+from .lateral_buckling import LateralBuckling
+from .pipe_soil_interaction import PipeSoilInteraction
+from .oos import OOSAnonymisation
 
-# Library of lateral buckling calculations
-from .lateral_buckling import *
-
-# Library of pipe-soil interaction calculations
-from .pipe_soil_interaction import *
-
-# Library of limit state calculations
-from .limit_states_dnv import *
+# __all__ for explicit API exposure:
+__all__ = [
+    "Pipe",
+    "DNVLimitStates",
+    "LateralBuckling",
+    "PipeSoilInteraction",
+    "OOSAnonymisation"
+]

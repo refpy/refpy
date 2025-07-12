@@ -3,298 +3,300 @@ Library of pipeline main properties
 '''
 
 import numpy as np
-
-def wall_thickness_corroded(wall_thickness: np.ndarray,
-                            corrosion_allowance: np.ndarray) -> np.ndarray:
+class Pipe: # pylint: disable=too-many-arguments
     """
-    Calculate the corroded wall thickness.
-
-    Parameters
-    ----------
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
-    corrosion_allowance : np.ndarray
-        Corrosion allowance of the pipe.
-
-    Returns
-    -------
-    corroded_wall_thickness : np.ndarray
-        Corroded wall thickness of the pipe.
-
-    Examples
-    --------
-    >>> corroded_wall_thickness(np.array([0.0127, 0.0159]), np.array([0.003, 0.003]))
-    array([0.0097, 0.0129])
+    Class representing a pipeline section with geometric and material properties.
+    Supports both scalar and array inputs for calculations.
     """
-    return wall_thickness - corrosion_allowance
+    def __init__(
+            self,
+            *,
+            outer_diameter=0.0,
+            wall_thickness=0.0,
+            coating_thickness=0.0,
+            corrosion_allowance=0.0,
+            youngs_modulus=0.0
+        ):
+        """
+        Initialize a Pipe object with geometric and material properties.
 
-def inner_diameter(outer_diameter: np.ndarray, wall_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the pipe inner diameter.
+        Parameters
+        ----------
+        outer_diameter : float, array-like
+            Outer diameter of the pipe (m).
+        wall_thickness : float, array-like
+            Wall thickness of the pipe (m).
+        coating_thickness : float, array-like, optional
+            Coating wall thickness (m). Default is 0.0.
+        corrosion_allowance : float, array-like, optional
+            Corrosion allowance (m). Default is 0.0.
+        youngs_modulus : float, array-like, optional
+            Young's modulus of the material (Pa). Default is None.
+        """
+        self.outer_diameter = np.asarray(outer_diameter, dtype = float)
+        self.wall_thickness = np.asarray(wall_thickness, dtype = float)
+        self.coating_thickness = np.asarray(coating_thickness, dtype = float)
+        self.corrosion_allowance = np.asarray(corrosion_allowance, dtype = float)
+        self.youngs_modulus = np.asarray(youngs_modulus, dtype = float)
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe.
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
+    def wall_thickness_corroded(self):
+        """
+        Calculate the corroded wall thickness.
 
-    Returns
-    -------
-    inner_diameter : np.ndarray
-        Inner diameter of the pipe.
+        Returns
+        -------
+        corroded_wall_thickness : np.ndarray
+            Corroded wall thickness of the pipe.
 
-    Examples
-    --------
-    >>> inner_diameter(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]))
-    array([0.2477, 0.2921])
-    """
-    return outer_diameter - 2.0 * wall_thickness
+        See Also
+        --------
+        Pipe.wall_thickness
+        Pipe.corrosion_allowance
 
-def inner_area(outer_diameter: np.ndarray, wall_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the pipe inner area
+        Examples
+        --------
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> corrosion_allowance = [0.003, 0.003]
+        >>> pipe = Pipe(wall_thickness=wall_thickness, corrosion_allowance=corrosion_allowance)
+        >>> pipe.wall_thickness_corroded()
+        array([0.0097, 0.0129])
+        """
+        return self.wall_thickness - self.corrosion_allowance
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe
+    def inner_diameter(self):
+        """
+        Calculate the pipe inner diameter.
 
-    Returns
-    -------
-    inner_area : np.ndarray
-        Inner area of the pipe
+        Returns
+        -------
+        inner_diameter : np.ndarray
+            Inner diameter of the pipe.
 
-    See Also
-    --------
-    inner_area : Calculate the pipe inner area.
+        See Also
+        --------
+        Pipe.outer_diameter
+        Pipe.wall_thickness
 
-    Examples
-    --------
-    >>> inner_area(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]))
-    array([0.04818833, 0.06701206])
-    """
-    inner_diameter_val = inner_diameter(outer_diameter, wall_thickness)
-    return np.pi / 4.0 * inner_diameter_val**2
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe.inner_diameter()
+        array([0.2477, 0.2921])
+        """
+        return self.outer_diameter - 2.0 * self.wall_thickness
 
-def outer_area(outer_diameter: np.ndarray) -> np.ndarray:
-    """
-    Calculate the pipe outer area
+    def inner_area(self):
+        """
+        Calculate the pipe inner area.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe
+        Returns
+        -------
+        inner_area : np.ndarray
+            Inner area of the pipe.
 
-    Returns
-    -------
-    outer_area : np.ndarray
-        Outer area of the pipe
+        See Also
+        --------
+        Pipe.inner_diameter
 
-    Examples
-    --------
-    >>> outer_area(np.array([0.2731, 0.3239]))
-    array([0.05857783, 0.08239707])
-    """
-    return np.pi / 4.0 * outer_diameter**2
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe.inner_area()
+        array([0.04818833, 0.06701206])
+        """
+        return np.pi / 4.0 * self.inner_diameter() ** 2
 
-def steel_area(outer_diameter: np.ndarray, wall_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the steel cross-sectional area.
+    def outer_area(self):
+        """
+        Calculate the pipe outer area.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe.
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
+        Returns
+        -------
+        outer_area : np.ndarray
+            Outer area of the pipe.
 
-    Returns
-    -------
-    steel_area : np.ndarray
-        Steel cross-sectional area.
+        See Also
+        --------
+        Pipe.outer_diameter
 
-    See Also
-    --------
-    inner_area : Calculate the pipe inner area.
-    outer_area : Calculate the pipe outer area.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> pipe = Pipe(outer_diameter=outer_diameter)
+        >>> pipe.outer_area()
+        array([0.05857783, 0.08239707])
+        """
+        return np.pi / 4.0 * self.outer_diameter ** 2
 
-    Examples
-    --------
-    >>> steel_area(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]))
-    array([0.0103895 , 0.01538501])
-    """
-    outer_area_val = outer_area(outer_diameter)
-    inner_area_val = inner_area(outer_diameter, wall_thickness)
-    return outer_area_val - inner_area_val
+    def steel_area(self):
+        """
+        Calculate the steel cross-sectional area.
 
-def total_outer_diameter(outer_diameter: np.ndarray, coating_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the total outer diameter of steel and coating.
+        Returns
+        -------
+        steel_area : np.ndarray
+            Steel cross-sectional area.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the steel pipe.
-    coating_thickness : np.ndarray
-        Coating wall thickness.
+        See Also
+        --------
+        Pipe.outer_area
+        Pipe.inner_area
 
-    Returns
-    -------
-    total_outer_diameter : np.ndarray
-        Total outer diameter of steel and coating.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe.steel_area()
+        array([0.0103895 , 0.01538501])
+        """
+        return self.outer_area() - self.inner_area()
 
-    Examples
-    --------
-    >>> total_outer_diameter(np.array([0.2731, 0.3239]), np.array([0.003, 0.003]))
-    array([0.2791, 0.3299])
-    """
-    return outer_diameter + 2.0 * coating_thickness
+    def total_outer_diameter(self):
+        """
+        Calculate the total outer diameter of steel and coating.
 
-def total_outer_area(outer_diameter: np.ndarray, coating_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the outer area of steel and coating.
+        Returns
+        -------
+        total_outer_diameter : np.ndarray
+            Total outer diameter of steel and coating.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the steel pipe.
-    coating_thickness : np.ndarray
-        Coating wall thickness.
+        See Also
+        --------
+        Pipe.outer_diameter
+        Pipe.coating_thickness
 
-    Returns
-    -------
-    total_outer_area : np.ndarray
-        Outer area of steel and coating.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> coating_thickness = [0.003, 0.003]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe.total_outer_diameter()
+        array([0.2791, 0.3299])
+        """
+        return self.outer_diameter + 2.0 * self.coating_thickness
 
-    Examples
-    --------
-    >>> total_outer_area(np.array([0.2731, 0.3239]), np.array([0.003, 0.003]))
-    array([0.06118001, 0.08547803])
-    """
-    total_outer_dia = total_outer_diameter(outer_diameter, coating_thickness)
-    return np.pi / 4.0 * total_outer_dia**2
+    def total_outer_area(self):
+        """
+        Calculate the outer area of steel and coating.
 
-def coating_area(outer_diameter: np.ndarray, coating_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the coating cross-sectional area.
+        Returns
+        -------
+        total_outer_area : np.ndarray
+            Outer area of steel and coating.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the steel pipe.
-    coating_thickness : np.ndarray
-        Coating wall thickness.
+        See Also
+        --------
+        Pipe.total_outer_diameter
 
-    Returns
-    -------
-    coating_area : np.ndarray
-        Coating cross-sectional area.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> coating_thickness = [0.003, 0.003]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe.total_outer_area()
+        array([0.06118001, 0.08547803])
+        """
+        return np.pi / 4.0 * self.total_outer_diameter() ** 2
 
-    See Also
-    --------
-    total_outer_area : Calculate the outer area of steel and coating.
-    outer_area_val : Calculate the pipe outer area
-    
-    Examples
-    --------
-    >>> coating_area(np.array([0.2731, 0.3239]), np.array([0.003, 0.003]))
-    array([0.00260218, 0.00308096])
-    """
-    total_outer_area_val = total_outer_area(outer_diameter, coating_thickness)
-    outer_area_val = outer_area(outer_diameter)
-    return total_outer_area_val - outer_area_val
+    def coating_area(self):
+        """
+        Calculate the coating cross-sectional area.
 
-def axial_stiffness(outer_diameter: np.ndarray, wall_thickness: np.ndarray,
-                    youngs_modulus: np.ndarray) -> np.ndarray:
-    """
-    Calculate the axial stiffness.
+        Returns
+        -------
+        coating_area : np.ndarray
+            Coating cross-sectional area.
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe.
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
-    youngs_modulus : np.ndarray
-        Young's modulus of the material.
+        See Also
+        --------
+        Pipe.total_outer_area
+        Pipe.outer_area
 
-    Returns
-    -------
-    axial_stiffness : np.ndarray
-        Axial stiffness of the pipe.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> coating_thickness = [0.003, 0.003]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe.coating_area()
+        array([0.00260218, 0.00308096])
+        """
+        return self.total_outer_area() - self.outer_area()
 
-    See Also
-    --------
-    steel_area : Calculate the steel cross-sectional area.
+    def axial_stiffness(self):
+        """
+        Calculate the axial stiffness.
 
-    Examples
-    --------
-    >>> axial_stiffness(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]), \
-        np.array([207.0e+09, 207.0e+09]))
-    array([2.15062613e+09, 3.18469656e+09])
-    """
-    steel_area_val = steel_area(outer_diameter, wall_thickness)
-    return youngs_modulus * steel_area_val
+        Returns
+        -------
+        axial_stiffness : np.ndarray
+            Axial stiffness of the pipe.
 
-def area_moment_inertia(outer_diameter: np.ndarray, wall_thickness: np.ndarray) -> np.ndarray:
-    """
-    Calculate the area moment inertia.
+        See Also
+        --------
+        Pipe.steel_area
+        Pipe.youngs_modulus
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe.
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> youngs_modulus = [207.0e+09, 207.0e+09]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness, youngs_modulus=youngs_modulus)
+        >>> pipe.axial_stiffness()
+        array([2.15062613e+09, 3.18469656e+09])
+        """
+        return self.youngs_modulus * self.steel_area()
 
-    Returns
-    -------
-    area_moment_inertia : np.ndarray
-        Area moment inertia.
+    def area_moment_inertia(self):
+        """
+        Calculate the area moment inertia.
 
-    See Also
-    --------
-    inner_diameter : Calculate the pipe inner diameter.
+        Returns
+        -------
+        area_moment_inertia : np.ndarray
+            Area moment inertia.
 
-    Examples
-    --------
-    >>> area_moment_inertia(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]))
-    array([8.82710601e-05, 1.82921605e-04])
-    """
-    inner_dia = inner_diameter(outer_diameter, wall_thickness)
-    return np.pi / 64.0 * (outer_diameter**4 - inner_dia**4)
+        See Also
+        --------
+        Pipe.outer_diameter
+        Pipe.inner_diameter
 
-def bending_stiffness(outer_diameter: np.ndarray, wall_thickness: np.ndarray,
-                      youngs_modulus: np.ndarray) -> np.ndarray:
-    """
-    Calculate the bending stiffness.
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe.area_moment_inertia()
+        array([8.82710601e-05, 1.82921605e-04])
+        """
+        return np.pi / 64.0 * (self.outer_diameter ** 4 - self.inner_diameter() ** 4)
 
-    Parameters
-    ----------
-    outer_diameter : np.ndarray
-        Outer diameter of the pipe.
-    wall_thickness : np.ndarray
-        Wall thickness of the pipe.
-    youngs_modulus : np.ndarray
-        Young's modulus.
+    def bending_stiffness(self):
+        """
+        Calculate the bending stiffness.
 
-    Returns
-    -------
-    bending_stiffness : np.ndarray
-        Bending stiffness.
+        Returns
+        -------
+        bending_stiffness : np.ndarray
+            Bending stiffness.
 
-    See Also
-    --------
-    area_moment_inertia : Calculate the area moment inertia.
+        See Also
+        --------
+        Pipe.area_moment_inertia
+        Pipe.youngs_modulus
 
-    Examples
-    --------
-    >>> bending_stiffness(np.array([0.2731, 0.3239]), np.array([0.0127, 0.0159]), \
-        np.array([207.0e+09, 207.0e+09]))
-    array([18272109.437121  , 37864772.21769765])
-    """
-    area_moment_inertia_val = area_moment_inertia(outer_diameter, wall_thickness)
-    return youngs_modulus * area_moment_inertia_val
+        Examples
+        --------
+        >>> outer_diameter = [0.2731, 0.3239]
+        >>> wall_thickness = [0.0127, 0.0159]
+        >>> youngs_modulus = [207.0e+09, 207.0e+09]
+        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness, youngs_modulus=youngs_modulus)
+        >>> pipe.bending_stiffness()
+        array([18272109.437121  , 37864772.21769765])
+        """
+        return self.youngs_modulus * self.area_moment_inertia()
