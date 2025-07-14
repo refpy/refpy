@@ -2,6 +2,7 @@
 Example script
 '''
 import itertools
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import refpy
@@ -104,6 +105,8 @@ def example2_data():
     # Import design data
     dfr = pd.read_excel('example_refpy.xlsx', sheet_name='Example2-Route')
     dfs = pd.read_excel('example_refpy.xlsx', sheet_name='Example2-Survey')
+    fft_cutoff_wavelength = 20.0  # FFT cutoff wavelength in meters
+    gaussian_bandwidth = 4.0  # Bandwidth for Gaussian smoothing
 
     # Initialise OOS anonymisation class
     oos = refpy.OOSAnonymisation(
@@ -162,7 +165,41 @@ def example2_data():
         'Group Northing Mod': oos.survey_group_section_northing_mod
     })
 
-    return df1, df2
+    # Initialise OOS smoothing class
+    oos_smooth = refpy.OOSSmoother(
+        development = df2['Development'],
+        survey_type = df2['Survey Type'],
+        pipeline_group = df2['Pipeline Group'],
+        group_section_type = df2['Group Section Type'],
+        group_section_number = df2['Group Section No'],
+        x = df2['Group Easting Mod'],
+        y = df2['Group Northing Mod'],
+        fft_cutoff_wl = fft_cutoff_wavelength,
+        gaussian_bandwidth = gaussian_bandwidth
+    )
+    #
+    oos_smooth.gaussian_filter()
+    df2['Group Gaussian Smooth Northing Mod'] = oos_smooth.y_smooth_gaussian
+    #
+    df2['FFT Cutoff Wavelength'] = fft_cutoff_wavelength
+    oos_smooth.fft_filter()
+    df2['Group FFT Smooth Northing Mod'] = oos_smooth.y_smooth
+    df2['Group FFT Smooth Frequencies - Raw'] = oos_smooth.freqs_raw
+    df2['Group FFT Smooth Spectrum - Raw'] = oos_smooth.fft_raw
+    df2['Group FFT Smooth Frequencies - Filtered'] = oos_smooth.freqs
+    df2['Group FFT Smooth Spectrum - Filtered'] = oos_smooth.fft
+    #
+    oos_smooth.fft_welch()
+    df3 = pd.DataFrame({
+        'Development': oos_smooth.psd_development,
+        'Survey Type': oos_smooth.psd_survey_type,
+        'Pipeline Group': oos_smooth.psd_pipeline_group,
+        'Section Type': oos_smooth.psd_group_section_type,
+        'Frequencies': oos_smooth.psd_freqs,
+        'PSD': oos_smooth.psd_vals,
+    })
+
+    return df1, df2, df3
 
 def example2_plot1(df):
     """
@@ -241,7 +278,8 @@ def example2_plot2(df):
     """
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     section_types = ['Straight', 'Curve']
-    for idx, (ax, sec_type) in enumerate(zip(axes, section_types)):
+    index = 0
+    for (ax, sec_type) in zip(axes, section_types):
         # Filter for section type
         df_sec = df[df['Section Type'] == sec_type]
         # Group by Pipeline Group and Group Section No
@@ -249,8 +287,22 @@ def example2_plot2(df):
         for (pipeline_group, group_section_no), group in grouped:
             ax.plot(
                 group['Group Easting Mod'],
+                group['Group FFT Smooth Northing Mod'],
+                label = "FFT Smoothing" if index == 0 else None,
+                color = 'black'
+            )
+            ax.plot(
+                group['Group Easting Mod'],
+                group['Group Gaussian Smooth Northing Mod'],
+                label = "Gaussian Smoothing" if index == 0 else None,
+                color = 'red'
+            )
+            ax.plot(
+                group['Group Easting Mod'],
                 group['Group Northing Mod'],
-                label=f"Group {pipeline_group[0]}, Section {group_section_no}"
+                label=f"Group {pipeline_group}, Section {group_section_no}",
+                linewidth = 0.5,
+                color = f'C{index}'
             )
             # Optionally annotate for curves
             if sec_type == 'Curve' and not group.empty:
@@ -266,6 +318,7 @@ def example2_plot2(df):
                     fontsize=8,
                     bbox=dict(boxstyle='round,pad=0.2', fc='blue', alpha=0.3)
                 )
+            index += 1
     for ax, sec_type in zip(axes, section_types):
         ax.set_xlabel('Easting Mod (m)')
         ax.set_ylabel('Northing Mod (m)')
@@ -285,6 +338,81 @@ def example2_plot2(df):
     plt.tight_layout()
     plt.show()
 
+def example2_plot3(df1, df2):
+
+    cutoff_wavelength = df1['FFT Cutoff Wavelength'].unique()[0]
+
+    # Find all unique group combinations present in df1
+    group_cols = ['Development', 'Survey Type', 'Pipeline Group', 'Section Type']
+    unique_groups = df1[group_cols].drop_duplicates().itertuples(index=False, name=None)
+
+    fig, a1 = plt.subplots(1, 1, figsize=(14, 6))
+
+    for idx, group in enumerate(unique_groups):
+
+        mask1 = (
+            (df1['Development'] == group[0]) &
+            (df1['Survey Type'] == group[1]) &
+            (df1['Pipeline Group'] == group[2]) &
+            (df1['Section Type'] == group[3])
+        )
+        df1_group = df1[mask1]
+
+        mask2 = (
+            (df2['Development'] == group[0]) &
+            (df2['Survey Type'] == group[1]) &
+            (df2['Pipeline Group'] == group[2]) &
+            (df2['Section Type'] == group[3])
+        )
+        df2_group = df2[mask2]
+        print(df2_group)
+        a1.plot(
+            1/df1_group['Group FFT Smooth Frequencies - Raw'],
+            np.abs(df1_group['Group FFT Smooth Spectrum - Raw']),
+            label=f"{group[2]} - {group[3]} - Original",
+            linewidth = 0.5,
+            color=f'C{idx}'
+        )
+        a1.plot(
+            1/df1_group['Group FFT Smooth Frequencies - Filtered'],
+            np.abs(df1_group['Group FFT Smooth Spectrum - Filtered']),
+            label=f"{group[2]} - {group[3]} - Filtered - WL > {int(cutoff_wavelength)}m",
+            linestyle='--',
+            color=f'C{idx}'
+        )
+        a1.axvline(
+            cutoff_wavelength,
+            linestyle='--',
+            color=f'C{idx}'
+        )
+        a1.plot(
+            1/df2_group.iloc[0]['Frequencies'],
+            df2_group.iloc[0]['PSD'],
+            label=f"{group[2]} - {group[3]} - Welch PSD",
+            linestyle=':',
+            color=f'C{idx}'
+        )
+
+    a1.set_xlabel("Wavelength (m)")
+    a1.set_ylabel("Power Spectral Density")
+    a1.grid()
+    a1.legend()
+    a1.set_xscale('log')
+    a1.set_yscale('log')
+
+    # Maximise the plot window
+    mng = plt.get_current_fig_manager()
+    try:
+        mng.window.state('zoomed')  # For TkAgg backend (Windows)
+    except Exception:
+        try:
+            mng.window.showMaximized()  # For Qt backend
+        except Exception:
+            pass  # If backend does not support maximising
+    plt.tight_layout()
+    plt.show()
+
+
 ###
 ### Example 1
 ###
@@ -294,6 +422,7 @@ print(dfe1.head())
 ###
 ### Example 2
 ###
-dfe2_1, dfe2_2 = example2_data()
-example2_plot1(dfe2_1)
-example2_plot2(dfe2_2)
+dfe2_1, dfe2_2, dfe2_3 = example2_data()
+# example2_plot1(dfe2_1)
+# example2_plot2(dfe2_2)
+example2_plot3(dfe2_2, dfe2_3)

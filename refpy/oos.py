@@ -4,6 +4,8 @@ This library performs various calculations to analyse the OOS data.
 
 import numpy as np
 from scipy.optimize import leastsq
+from scipy.fft import fft, ifft, fftfreq
+from scipy.signal import welch
 
 class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
@@ -601,7 +603,6 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                 if index == 0:
                     theta = 0.0
                 else:
-                    prev_idx = np.where(section_nos == prev_sec_no)[0]
                     # Last n_avg points of previous section
                     x_prev = x_prev_all[-prev_n_avg:]
                     y_prev = y_prev_all[-prev_n_avg:]
@@ -623,7 +624,6 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                     det = v1_u[0]*v2_u[1] - v1_u[1]*v2_u[0]
                     theta = -np.arctan2(det, dot)
                 # Previous section
-                prev_sec_no = sec_no
                 prev_n_avg = n_avg
                 # Shift to origin (0,0)
                 x_to_origin = x - x[0]
@@ -679,3 +679,290 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             if abs(max_north) < abs(min_north):
                 # Flip the sign of northing
                 self.survey_group_section_northing_mod[idx] = -self.survey_group_section_northing_mod[idx]
+
+class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+    """
+    Class to perform FFT filtering and spectral analysis on 1D signals, grouped by
+    (development, survey type, pipeline group, group section type).
+    """
+    def __init__(
+            self,
+            *,
+            development,
+            survey_type,
+            pipeline_group,
+            group_section_type,
+            group_section_number,
+            x,
+            y,
+            fft_cutoff_wl,
+            gaussian_bandwidth
+        ):
+        """
+        Initialize an OOSAnonymisation object with route and survey data.
+
+        Parameters
+        ----------
+        development : array_like
+            Development identifier for each point.
+        survey_type : array_like
+            Survey type for each point.
+        pipeline_group : array_like
+            Pipeline group for each point.
+        group_section_type : array_like
+            Group section type for each point.
+        group_section_number : array_like
+            Group section number for each point.
+        x : array_like
+            The x-coordinates (e.g., distance or KP) for all points.
+        y : array_like
+            The y-values (signal) for all points.
+        fft_cutoff_wl : float or None, optional
+            Wavelength cutoff for FFT filtering. If None, no filtering is applied.
+        gaussian_bandwidth : float, optional
+            Bandwidth for Gaussian filtering. Default is 4.0.
+
+        Attributes
+        ----------
+        y_smooth : np.ndarray
+            Array of filtered y-values, aligned with input y (NaN for points not in a group).
+        freqs : np.ndarray
+            Array of frequency values, aligned with input y (NaN for points not in a group).
+        fft : np.ndarray
+            Array of filtered FFT values, aligned with input y (NaN for points not in a group).
+        freqs_raw : np.ndarray
+            Array of raw (unfiltered) frequency values, aligned with input y
+            (NaN for points not in a group).
+        fft_raw : np.ndarray
+            Array of raw (unfiltered) FFT values, aligned with input y
+            (NaN for points not in a group).
+        psd_development : list of np.ndarray
+            For each group, an array filled with the development value,
+            same length as the PSD frequency array (set by fft_welch).
+        psd_survey_type : list of np.ndarray
+            For each group, an array filled with the survey type value,
+            same length as the PSD frequency array (set by fft_welch).
+        psd_survey_number : list of np.ndarray
+            For each group, an array filled with the survey number,
+            same length as the PSD frequency array (set by fft_welch).
+        psd_pipeline_group : list of np.ndarray
+            For each group, an array filled with the pipeline group value,
+            same length as the PSD frequency array (set by fft_welch).
+        psd_group_section_type : list of np.ndarray
+            For each group, an array filled with the group section type value,
+            same length as the PSD frequency array (set by fft_welch).
+        psd_freqs : list of np.ndarray
+            List of frequency arrays for each group (set by fft_welch).
+        psd_vals : list of np.ndarray
+            List of PSD arrays for each group (set by fft_welch).
+        y_smooth_gaussian : np.ndarray
+            Array of filtered y-values using the gaussian filter,
+            aligned with input y (NaN for points not in a group).
+        """
+        # Convert to arrays
+        self.development = np.asarray(development, dtype=object)
+        self.survey_type = np.asarray(survey_type, dtype=object)
+        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        self.group_section_number = np.asarray(group_section_number, dtype=float)
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
+        # Prepare fft_filter attributes
+        self.group_tuples = list(zip(
+            self.development,
+            self.survey_type,
+            self.pipeline_group,
+            self.group_section_type,
+        ))
+        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
+        self.fft_cutoff_wl = fft_cutoff_wl
+        self.gaussian_bandwidth = gaussian_bandwidth
+        # Initialize attributes
+        self.y_smooth = np.full_like(self.y, np.nan, dtype=float)
+        self.freqs = np.full_like(self.y, np.nan, dtype=float)
+        self.fft = np.full_like(self.y, np.nan, dtype=complex)
+        self.freqs_raw = np.full_like(self.y, np.nan, dtype=float)
+        self.fft_raw = np.full_like(self.y, np.nan, dtype=complex)
+        # Prepare fft_welch attributes
+        self.psd_development = []
+        self.psd_survey_type = []
+        self.psd_pipeline_group = []
+        self.psd_group_section_type = []
+        self.psd_freqs = []
+        self.psd_vals = []
+        # Prepare gaussian attributes
+        self.y_smooth_gaussian = np.full_like(self.y, np.nan, dtype=float)
+
+    def fft_filter(self):
+        """
+        Apply FFT low-pass filtering to each group, deduplicating (x_g, y_g) pairs within a group
+        before filtering.
+        The smoothed value is mapped back to all original indices for each unique pair, ensuring
+        identical pairs get identical y_smooth values.
+
+        This method also stores the raw (unfiltered) FFT and frequency values for each group in
+        the attributes `fft_raw` and `freqs_raw`.
+
+        Sets the following attributes:
+        -----------------------------
+        y_smooth : ndarray
+            Array of filtered y-values, aligned with input y
+            (NaN for points not in a group).
+        freqs : ndarray
+            Array of filtered frequency values, aligned with input y
+            (NaN for points not in a group).
+        fft : ndarray
+            Array of filtered FFT values, aligned with input y
+            (NaN for points not in a group).
+        freqs_raw : ndarray
+            Array of raw (unfiltered) frequency values, aligned with input y
+            (NaN for points not in a group).
+        fft_raw : ndarray
+            Array of raw (unfiltered) FFT values, aligned with input y
+            (NaN for points not in a group).
+
+        Returns
+        -------
+        None
+        """
+        for group in self.unique_groups:
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+            x_g = self.x[mask]
+            y_g = self.y[mask]
+            # Deduplicate (x_g, y_g) pairs
+            pairs = np.column_stack((x_g, y_g))
+            _, unique_idx, inverse_idx = np.unique(pairs, axis=0,
+                                                   return_index=True, return_inverse=True)
+            x_g_unique = x_g[unique_idx]
+            y_g_unique = y_g[unique_idx]
+            # FFT filtering on unique pairs
+            if len(x_g_unique) < 2:
+                # Not enough points to filter
+                y_smooth_unique = y_g_unique.copy()
+                freqs_g = np.full_like(x_g_unique, np.nan, dtype=float)
+                fft_g = np.full_like(x_g_unique, np.nan, dtype=complex)
+            else:
+                dx_g = np.mean(np.diff(x_g_unique))
+                fs_g = 1 / dx_g
+                fft_vals_g = fft(y_g_unique)
+                freqs_g = fftfreq(len(x_g_unique), 1 / fs_g)
+                fft_g = np.copy(fft_vals_g)
+                if self.fft_cutoff_wl is not None:
+                    fft_g[np.abs(freqs_g) > 1 / self.fft_cutoff_wl] = 0
+                y_smooth_unique = np.real(ifft(fft_g))
+            # Map smoothed values back to all original indices
+            y_smooth_g = y_smooth_unique[inverse_idx]
+            freqs_g_full = np.full_like(x_g, np.nan, dtype=float)
+            fft_g_full = np.full_like(x_g, np.nan, dtype=complex)
+            fft_raw_full = np.full_like(x_g, np.nan, dtype=complex)
+            freqs_raw_full = np.full_like(x_g, np.nan, dtype=float)
+            # For each original index, assign the frequency and fft value from the unique pair
+            for i, idx in enumerate(inverse_idx):
+                if len(freqs_g) > idx:
+                    freqs_g_full[i] = freqs_g[idx]
+                    fft_g_full[i] = fft_g[idx]
+                    freqs_raw_full[i] = freqs_g[idx]
+                    fft_raw_full[i] = fft_vals_g[idx]
+            # Assign values
+            self.y_smooth[mask] = y_smooth_g
+            self.freqs[mask] = freqs_g_full
+            self.fft[mask] = fft_g_full
+            self.freqs_raw[mask] = freqs_raw_full
+            self.fft_raw[mask] = fft_raw_full
+
+    def fft_welch(self, nperseg=256):
+        """
+        Compute the Power Spectral Density (PSD) using Welch's method for each group.
+
+        This method estimates the distribution of signal power as a function of wavelength.
+        By plotting the PSD against wavelength (1/frequency), you can visually identify
+        which wavelength bands contain significant noise or signal energy. 
+        Typically, noise appears at shorter wavelengths (higher frequencies), while meaningful
+        signal features are often found at longer wavelengths. Use this information to select
+        an appropriate cutoff wavelength for filtering out noise.
+
+        Sets the following attributes:
+        -----------------------------
+        psd_development : list of ndarray
+            For each group, an array filled with the development value,
+            same length as the PSD frequency array.
+        psd_survey_type : list of ndarray
+            For each group, an array filled with the survey type value,
+            same length as the PSD frequency array.
+        psd_pipeline_group : list of ndarray
+            For each group, an array filled with the pipeline group value,
+            same length as the PSD frequency array.
+        psd_group_section_type : list of ndarray
+            For each group, an array filled with the group section type value,
+            same length as the PSD frequency array.
+        psd_freqs : list of ndarray
+            List of frequency arrays for each group.
+        psd_vals : list of ndarray
+            List of PSD arrays for each group.
+
+        Returns
+        -------
+        None
+        """
+        for group in self.unique_groups:
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+            x_g = self.x[mask]
+            y_g = self.y[mask]
+            dx_g = np.mean(np.diff(x_g))
+            fs_g = 1 / dx_g
+            f_welch, pxx_welch = welch(y_g, fs=fs_g, nperseg=nperseg)
+            self.psd_development.append(group[0])
+            self.psd_survey_type.append(group[1])
+            self.psd_pipeline_group.append(group[2])
+            self.psd_group_section_type.append(group[3])
+            self.psd_freqs.append(f_welch)
+            self.psd_vals.append(pxx_welch)
+
+    def gaussian_filter(self):
+        """
+        Apply Gaussian kernel smoothing to each group, using gaussian_bandwidth.
+
+        The smoothing is performed group-wise, using the same grouping as fft_filter.
+        The result is stored in self.y_smooth_gaussian, aligned with input y.
+
+        Sets
+        ----
+        y_smooth_gaussian : ndarray
+            Array of smoothed y-values, aligned with input y (NaN for points not in a group).
+        """
+        std = 0.37
+        b_scaled = self.gaussian_bandwidth / std
+        for group in self.unique_groups:
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+            x_g = self.x[mask]
+            y_g = self.y[mask]
+            y_smooth_g = np.empty_like(y_g, dtype=float)
+            for i in range(x_g.size):
+                x_left = max(x_g[0], x_g[i] - 2 * b_scaled)
+                x_right = min(x_g[i] + 2 * b_scaled, x_g[-1])
+                idx = np.where((x_g >= x_left) & (x_g <= x_right))[0]
+                xgk = x_g[idx]
+                ygk = y_g[idx]
+                weight = (
+                    1 / ((2 * np.pi) ** 0.5 * std)* np.exp(
+                        -0.5 * (np.abs(xgk - x_g[i]) / b_scaled / std) ** 2)
+                )
+                sumygk = np.dot(weight, ygk)
+                sumweight = np.sum(weight)
+                y_smooth_g[i] = sumygk / sumweight if sumweight != 0 else ygk[0]
+            self.y_smooth_gaussian[mask] = y_smooth_g
