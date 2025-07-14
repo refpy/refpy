@@ -615,12 +615,29 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                     x_curr = x[:n_avg]
                     y_curr = y[:n_avg]
                     # Best linear fit for previous section
-                    coeffs_prev = np.polyfit(x_prev, y_prev, 1)
+                    if (
+                        len(x_prev) < 2 or
+                        np.any(np.isnan(x_prev)) or np.any(np.isnan(y_prev)) or
+                        np.any(np.isinf(x_prev)) or np.any(np.isinf(y_prev)) or
+                        np.all(x_prev == x_prev[0])
+                    ):
+                        # Fallback: set coeffs_prev to [0, 0] or skip this section
+                        coeffs_prev = [0, 0]
+                    else:
+                        coeffs_prev = np.polyfit(x_prev, y_prev, 1)
                     slope_prev = coeffs_prev[0]
                     v1 = np.array([1.0, slope_prev])  # direction vector from slope
                     v1_u = v1 / np.linalg.norm(v1)
                     # Best linear fit for current section
-                    coeffs_curr = np.polyfit(x_curr, y_curr, 1)
+                    if (
+                        len(x_curr) < 2 or
+                        np.any(np.isnan(x_curr)) or np.any(np.isnan(y_curr)) or
+                        np.any(np.isinf(x_curr)) or np.any(np.isinf(y_curr)) or
+                        np.all(x_curr == x_curr[0])
+                    ):
+                        coeffs_curr = [0, 0]
+                    else:
+                        coeffs_curr = np.polyfit(x_curr, y_curr, 1)
                     slope_curr = coeffs_curr[0]
                     v2 = np.array([1.0, slope_curr])
                     v2_u = v2 / np.linalg.norm(v2)
@@ -851,9 +868,14 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                 y_smooth_unique = y_g_unique.copy()
                 freqs_g = np.full_like(x_g_unique, np.nan, dtype=float)
                 fft_g = np.full_like(x_g_unique, np.nan, dtype=complex)
+                fft_vals_g = np.full_like(x_g_unique, np.nan, dtype=complex)
             else:
                 dx_g = np.mean(np.diff(x_g_unique))
-                fs_g = 1 / dx_g
+                if dx_g == 0:
+                    fs_g = np.nan
+                    continue
+                else:
+                    fs_g = 1 / dx_g
                 fft_vals_g = fft(y_g_unique)
                 freqs_g = fftfreq(len(x_g_unique), 1 / fs_g)
                 fft_g = np.copy(fft_vals_g)
@@ -923,9 +945,14 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             )
             x_g = self.x[mask]
             y_g = self.y[mask]
+            if len(x_g) < 2 or len(y_g) < 2:
+                continue
             dx_g = np.mean(np.diff(x_g))
+            if dx_g == 0:
+                continue
             fs_g = 1 / dx_g
-            f_welch, pxx_welch = welch(y_g, fs=fs_g, nperseg=nperseg)
+            nperseg_eff = min(nperseg, len(y_g))
+            f_welch, pxx_welch = welch(y_g, fs=fs_g, nperseg=nperseg_eff)
             self.psd_development.append(group[0])
             self.psd_survey_type.append(group[1])
             self.psd_pipeline_group.append(group[2])
@@ -969,5 +996,10 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                 )
                 sumygk = np.dot(weight, ygk)
                 sumweight = np.sum(weight)
-                y_smooth_g[i] = sumygk / sumweight if sumweight != 0 else ygk[0]
+                if sumweight != 0:
+                    y_smooth_g[i] = sumygk / sumweight
+                elif ygk.size > 0:
+                    y_smooth_g[i] = ygk[0]
+                else:
+                    y_smooth_g[i] = np.nan  # or 0, or skip, depending on your needs
             self.y_smooth_gaussian[mask] = y_smooth_g
