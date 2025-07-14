@@ -103,10 +103,14 @@ def example2_data():
     """
 
     # Import design data
-    dfr = pd.read_excel('example_refpy.xlsx', sheet_name='Example2-Route')
-    dfs = pd.read_excel('example_refpy.xlsx', sheet_name='Example2-Survey')
-    fft_cutoff_wavelength = 20.0  # FFT cutoff wavelength in meters
-    gaussian_bandwidth = 4.0  # Bandwidth for Gaussian smoothing
+    dfr = pd.read_excel(FILENAME, sheet_name='Example2-Route')
+    dfs = pd.read_excel(FILENAME, sheet_name='Example2-Survey')
+    dfs = dfs.loc[
+        dfs['Development'].isin(DEVELOPMENT) &
+        dfs['Survey Type'].isin(SURVEY_TYPE) &
+        dfs['Pipeline Group'].isin(PIPELINE_GROUP) &
+        dfs['Pipeline'].isin(PIPELINE)
+    ]
 
     # Initialise OOS anonymisation class
     oos = refpy.OOSAnonymisation(
@@ -174,14 +178,14 @@ def example2_data():
         group_section_number = df2['Group Section No'],
         x = df2['Group Easting Mod'],
         y = df2['Group Northing Mod'],
-        fft_cutoff_wl = fft_cutoff_wavelength,
-        gaussian_bandwidth = gaussian_bandwidth
+        fft_cutoff_wl = FFT_CUTOFF_WAVELENGTH,
+        gaussian_bandwidth = GAUSSIAN_BANDWIDTH
     )
     #
     oos_smooth.gaussian_filter()
     df2['Group Gaussian Smooth Northing Mod'] = oos_smooth.y_smooth_gaussian
     #
-    df2['FFT Cutoff Wavelength'] = fft_cutoff_wavelength
+    df2['FFT Cutoff Wavelength'] = FFT_CUTOFF_WAVELENGTH
     oos_smooth.fft_filter()
     df2['Group FFT Smooth Northing Mod'] = oos_smooth.y_smooth
     df2['Group FFT Smooth Frequencies - Raw'] = oos_smooth.freqs_raw
@@ -265,7 +269,6 @@ def example2_plot1(df):
             mng.window.showMaximized()  # For Qt backend
         except Exception:
             pass  # If backend does not support maximising
-    plt.tight_layout()
     plt.show()
 
 def example2_plot2(df):
@@ -335,10 +338,39 @@ def example2_plot2(df):
             mng.window.showMaximized()  # For Qt backend
         except Exception:
             pass  # If backend does not support maximising
-    plt.tight_layout()
     plt.show()
 
 def example2_plot3(df1, df2):
+    """
+    Plot group-wise FFT and Welch PSD spectra for pipeline survey data.
+
+    For each unique combination of Development, Survey Type, Pipeline Group, and Section Type,
+    this function plots:
+    - The original (raw) FFT spectrum of the group-wise smoothed Northing Mod coordinate.
+    - The filtered FFT spectrum after applying the cutoff wavelength.
+    - The Welch Power Spectral Density (PSD) estimate for the group.
+
+    All spectra are plotted as functions of wavelength (1/frequency) on a log-log scale.
+    The cutoff wavelength is indicated with a vertical dashed line for each group.
+
+    Parameters
+    ----------
+    df1 : pandas.DataFrame
+        DataFrame containing group-wise FFT results, with columns:
+        'Development', 'Survey Type', 'Pipeline Group', 'Section Type',
+        'Group FFT Smooth Frequencies - Raw', 'Group FFT Smooth Spectrum - Raw',
+        'Group FFT Smooth Frequencies - Filtered', 'Group FFT Smooth Spectrum - Filtered',
+        and 'FFT Cutoff Wavelength'.
+    df2 : pandas.DataFrame
+        DataFrame containing Welch PSD results, with columns:
+        'Development', 'Survey Type', 'Pipeline Group', 'Section Type',
+        'Frequencies', and 'PSD'.
+
+    Returns
+    -------
+    None
+        Displays a matplotlib plot window with the group-wise spectra.
+    """
 
     cutoff_wavelength = df1['FFT Cutoff Wavelength'].unique()[0]
 
@@ -365,7 +397,7 @@ def example2_plot3(df1, df2):
             (df2['Section Type'] == group[3])
         )
         df2_group = df2[mask2]
-        print(df2_group)
+
         a1.plot(
             1/df1_group['Group FFT Smooth Frequencies - Raw'],
             np.abs(df1_group['Group FFT Smooth Spectrum - Raw']),
@@ -385,9 +417,12 @@ def example2_plot3(df1, df2):
             linestyle='--',
             color=f'C{idx}'
         )
+        freqs = np.array(df2_group.iloc[0]['Frequencies'])
+        psd = np.array(df2_group.iloc[0]['PSD'])
+        mask = freqs != 0
         a1.plot(
-            1/df2_group.iloc[0]['Frequencies'],
-            df2_group.iloc[0]['PSD'],
+            1/freqs[mask],
+            psd[mask],
             label=f"{group[2]} - {group[3]} - Welch PSD",
             linestyle=':',
             color=f'C{idx}'
@@ -409,19 +444,24 @@ def example2_plot3(df1, df2):
             mng.window.showMaximized()  # For Qt backend
         except Exception:
             pass  # If backend does not support maximising
-    plt.tight_layout()
     plt.show()
-
 
 ###
 ### Example 1
 ###
 dfe1 = example1()
-print(dfe1.head())
+# print(dfe1.head())
 
 ###
 ### Example 2
 ###
+FILENAME = 'example_refpy.xlsx'
+DEVELOPMENT = ['Example']
+SURVEY_TYPE = ['As-Laid']
+PIPELINE_GROUP = ['PG1']
+PIPELINE = ['P1']
+FFT_CUTOFF_WAVELENGTH = 20.0  # FFT cutoff wavelength in meters
+GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
 dfe2_1, dfe2_2, dfe2_3 = example2_data()
 example2_plot1(dfe2_1)
 example2_plot2(dfe2_2)
