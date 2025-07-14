@@ -423,6 +423,6 @@ print(dfe1.head())
 ### Example 2
 ###
 dfe2_1, dfe2_2, dfe2_3 = example2_data()
-# example2_plot1(dfe2_1)
-# example2_plot2(dfe2_2)
+example2_plot1(dfe2_1)
+example2_plot2(dfe2_2)
 example2_plot3(dfe2_2, dfe2_3)
