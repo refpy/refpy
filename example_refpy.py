@@ -221,14 +221,20 @@ def example2_plot1(df):
     feature_markers = itertools.cycle(['o', 's', '^'])
     feature_colors = itertools.cycle(['black', 'black', 'black'])
     for idx, (ax, sec_type) in enumerate(zip(axes, section_types)):
-        grouped = df[df['Section Type'] == sec_type].groupby(['Pipeline', 'Section No'])
-        for (pipeline, section_no), group in grouped:
+        grouped = (
+            df[df['Section Type'] == sec_type]
+            .groupby(['Development', 'Survey Type', 'Pipeline Group', 'Pipeline', 'Section No'])
+        )
+        for (development, survey_type, pipeline_group, pipeline, section_no), group in grouped:
             ax.plot(
                 group['Easting Mod'],
                 group['Northing Mod'],
-                label=f"Pipeline {pipeline}, Section {section_no}"
+                label=(
+                    f"{development} - {survey_type} - {pipeline_group}"
+                    f" - {pipeline} - S{int(section_no)}"
+                )
             )
-            if sec_type == 'Curve' and not group.empty:
+            if survey_type == SURVEY_TYPE[0] and sec_type == 'Curve' and not group.empty:
                 # Annotate at the first point
                 x0 = group['Easting Mod'].mean()
                 y0 = group['Northing Mod'].mean()
@@ -279,6 +285,7 @@ def example2_plot2(df):
     For the Curve subplot, annotates each line with the first value of
     'Design Route Curve Radius' and 'Actual Route Curve Radius'.
     """
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     section_types = ['Straight', 'Curve']
     index = 0
@@ -286,42 +293,47 @@ def example2_plot2(df):
         # Filter for section type
         df_sec = df[df['Section Type'] == sec_type]
         # Group by Pipeline Group and Group Section No
-        grouped = df_sec.groupby(['Pipeline Group', 'Group Section No'])
-        for (pipeline_group, group_section_no), group in grouped:
-            ax.plot(
-                group['Group Easting Mod'],
-                group['Group FFT Smooth Northing Mod'],
-                label = "FFT Smoothing" if index == 0 else None,
-                color = 'black'
+        for idx, (ax, sec_type) in enumerate(zip(axes, section_types)):
+            grouped = (
+                df_sec[df_sec['Section Type'] == sec_type]
+                .groupby(['Development', 'Survey Type', 'Pipeline Group', 'Group Section No'])
             )
-            ax.plot(
-                group['Group Easting Mod'],
-                group['Group Gaussian Smooth Northing Mod'],
-                label = "Gaussian Smoothing" if index == 0 else None,
-                color = 'red'
-            )
-            ax.plot(
-                group['Group Easting Mod'],
-                group['Group Northing Mod'],
-                label=f"Group {pipeline_group}, Section {group_section_no}",
-                linewidth = 0.5,
-                color = f'C{index}'
-            )
-            # Optionally annotate for curves
-            if sec_type == 'Curve' and not group.empty:
-                x0 = group['Group Easting Mod'].mean()
-                y0 = group['Group Northing Mod'].mean()
-                design_radius = group['Design Route Curve Radius'].iloc[0]
-                actual_radius = group['Actual Route Curve Radius'].iloc[0]
-                ax.annotate(
-                    f"Design: {design_radius:.2f}\nActual: {actual_radius:.2f}",
-                    xy=(x0, y0),
-                    xytext=(0, 0),
-                    textcoords='offset points',
-                    fontsize=8,
-                    bbox=dict(boxstyle='round,pad=0.2', fc='blue', alpha=0.3)
+            for (development, survey_type, pipeline_group, group_section_no), group in grouped:
+                print((development, survey_type, pipeline_group, group_section_no))
+                ax.plot(
+                    group['Group Easting Mod'],
+                    group['Group FFT Smooth Northing Mod'],
+                    label = "FFT Smoothing" if index == 0 else None,
+                    color = 'black'
                 )
-            index += 1
+                ax.plot(
+                    group['Group Easting Mod'],
+                    group['Group Gaussian Smooth Northing Mod'],
+                    label = "Gaussian Smoothing" if index == 0 else None,
+                    color = 'red'
+                )
+                ax.plot(
+                    group['Group Easting Mod'],
+                    group['Group Northing Mod'],
+                    label=f"{development} - {survey_type} - {pipeline_group} - S{group_section_no}",
+                    linewidth = 0.5,
+                    color = f'C{index}'
+                )
+                # Optionally annotate for curves
+                if sec_type == 'Curve' and not group.empty:
+                    x0 = group['Group Easting Mod'].mean()
+                    y0 = group['Group Northing Mod'].mean()
+                    design_radius = group['Design Route Curve Radius'].iloc[0]
+                    actual_radius = group['Actual Route Curve Radius'].iloc[0]
+                    ax.annotate(
+                        f"Design: {design_radius:.2f}\nActual: {actual_radius:.2f}",
+                        xy=(x0, y0),
+                        xytext=(0, 0),
+                        textcoords='offset points',
+                        fontsize=8,
+                        bbox=dict(boxstyle='round,pad=0.2', fc='blue', alpha=0.3)
+                    )
+                index += 1
     for ax, sec_type in zip(axes, section_types):
         ax.set_xlabel('Easting Mod (m)')
         ax.set_ylabel('Northing Mod (m)')
@@ -401,14 +413,17 @@ def example2_plot3(df1, df2):
         a1.plot(
             1/df1_group['Group FFT Smooth Frequencies - Raw'],
             np.abs(df1_group['Group FFT Smooth Spectrum - Raw']),
-            label=f"{group[2]} - {group[3]} - Original",
+            label=f"{group[0]} - {group[1]} - {group[2]} - {group[3]} - Original",
             linewidth = 0.5,
             color=f'C{idx}'
         )
         a1.plot(
             1/df1_group['Group FFT Smooth Frequencies - Filtered'],
             np.abs(df1_group['Group FFT Smooth Spectrum - Filtered']),
-            label=f"{group[2]} - {group[3]} - Filtered - WL > {int(cutoff_wavelength)}m",
+            label=(
+                f"{group[0]} - {group[1]} - {group[2]} - {group[3]} - "
+                f"WL > {int(cutoff_wavelength)}m"
+            ),
             linestyle='--',
             color=f'C{idx}'
         )
@@ -423,7 +438,7 @@ def example2_plot3(df1, df2):
         a1.plot(
             1/freqs[mask],
             psd[mask],
-            label=f"{group[2]} - {group[3]} - Welch PSD",
+            label=f"{group[0]} - {group[1]} - {group[2]} - {group[3]} - Welch PSD",
             linestyle=':',
             color=f'C{idx}'
         )
@@ -457,9 +472,9 @@ dfe1 = example1()
 ###
 FILENAME = 'example_refpy.xlsx'
 DEVELOPMENT = ['Example']
-SURVEY_TYPE = ['As-Laid']
-PIPELINE_GROUP = ['PG1']
-PIPELINE = ['P1']
+SURVEY_TYPE = ['As-Laid', 'ROV']
+PIPELINE_GROUP = ['PG2']
+PIPELINE = ['F1']
 FFT_CUTOFF_WAVELENGTH = 20.0  # FFT cutoff wavelength in meters
 GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
 dfe2_1, dfe2_2, dfe2_3 = example2_data()
