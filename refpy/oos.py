@@ -171,7 +171,10 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         self.survey_section_type = section_type
 
         # Add Section No for each continuous section
-        group_keys = [self.survey_development, self.survey_pipeline_group, self.survey_pipeline]
+        group_keys = [
+            self.survey_development, self.survey_type,
+            self.survey_pipeline_group, self.survey_pipeline
+        ]
         section_no = np.zeros(self.survey_kp.shape[0], dtype=int)
         prev_keys = None
         prev_type = None
@@ -200,12 +203,14 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         for i, section_type in enumerate(self.route_pipeline_section_type):
             if section_type in feature_types:
                 dev = self.route_development[i]
+                survey = self.survey_type[i]
                 group = self.route_pipeline_group[i]
                 pipe = self.route_pipeline[i]
                 kp = self.route_kp_from[i]
                 # Find matching survey points
                 mask = (
                     (self.survey_development == dev) &
+                    (self.survey_type == survey) &
                     (self.survey_pipeline_group == group) &
                     (self.survey_pipeline == pipe)
                 )
