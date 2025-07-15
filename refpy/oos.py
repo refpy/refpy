@@ -503,14 +503,6 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         -------
         None
         """
-        def remove_outliers_iqr(arr, whisker=1.5):
-            q1 = np.nanpercentile(arr, 25)
-            q3 = np.nanpercentile(arr, 75)
-            iqr = q3 - q1
-            lower = q1 - whisker * iqr
-            upper = q3 + whisker * iqr
-            mask = (arr >= lower) & (arr <= upper)
-            return arr[mask]
         # Add group section number
         current_section = 0
         group_keys1 = [self.survey_development, self.survey_type, self.survey_pipeline_group]
@@ -521,9 +513,6 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         # Group no. loop
         n = self.survey_kp.shape[0]
         group_section_no = np.zeros(n, dtype=int)
-        kp_diff = np.diff(self.survey_kp)
-        kp_diff_outliers = remove_outliers_iqr(kp_diff)
-        avg_kp_diff = np.nanmean(kp_diff_outliers)
         for i in range(n):
             keys1 = tuple(key[i] for key in group_keys1)
             keys2 = tuple(key[i] for key in group_keys2)
@@ -532,7 +521,7 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                 current_section = 1  # Reset to 1 when group_keys changes
             elif keys2 != prev_keys2:
                 current_section += 1  # Increase if section type changes
-            elif prev_kp is not None and curr_kp - prev_kp > 1.5*avg_kp_diff:
+            elif prev_kp is not None and curr_kp - prev_kp > 0.350: # +/-200m removed at features
                 current_section += 1
             group_section_no[i] = current_section
             prev_keys1 = keys1

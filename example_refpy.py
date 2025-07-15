@@ -299,24 +299,24 @@ def example2_plot2(df):
                 .groupby(['Development', 'Survey Type', 'Pipeline Group', 'Group Section No'])
             )
             for (development, survey_type, pipeline_group, group_section_no), group in grouped:
-                print((development, survey_type, pipeline_group, group_section_no))
-                ax.plot(
-                    group['Group Easting Mod'],
-                    group['Group FFT Smooth Northing Mod'],
-                    label = "FFT Smoothing" if index == 0 else None,
-                    color = 'black'
-                )
-                ax.plot(
-                    group['Group Easting Mod'],
-                    group['Group Gaussian Smooth Northing Mod'],
-                    label = "Gaussian Smoothing" if index == 0 else None,
-                    color = 'red'
-                )
+                if survey_type == 'As-Laid':
+                    ax.plot(
+                        group['Group Easting Mod'],
+                        group['Group FFT Smooth Northing Mod'],
+                        label = "FFT Smoothing" if index == 0 else None,
+                        color = 'black'
+                    )
+                    ax.plot(
+                        group['Group Easting Mod'],
+                        group['Group Gaussian Smooth Northing Mod'],
+                        label = "Gaussian Smoothing" if index == 0 else None,
+                        color = 'red'
+                    )
                 ax.plot(
                     group['Group Easting Mod'],
                     group['Group Northing Mod'],
                     label=f"{development} - {survey_type} - {pipeline_group} - S{group_section_no}",
-                    linewidth = 0.5,
+                    linewidth = 0.75,
                     color = f'C{index}'
                 )
                 # Optionally annotate for curves
@@ -472,10 +472,10 @@ dfe1 = example1()
 ###
 FILENAME = 'example_refpy.xlsx'
 DEVELOPMENT = ['Example']
-SURVEY_TYPE = ['As-Laid', 'ROV']
-PIPELINE_GROUP = ['PG2']
-PIPELINE = ['F1']
-FFT_CUTOFF_WAVELENGTH = 20.0  # FFT cutoff wavelength in meters
+SURVEY_TYPE = ['As-Laid', 'Processed']
+PIPELINE_GROUP = ['PG1']
+PIPELINE = ['P2']
+FFT_CUTOFF_WAVELENGTH = 16.0  # FFT cutoff wavelength in meters
 GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
 dfe2_1, dfe2_2, dfe2_3 = example2_data()
 example2_plot1(dfe2_1)
