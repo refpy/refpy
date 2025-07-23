@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath("../"))
 project = 'RefPy'
 copyright = '2025, Ismael Ripoll'
 author = 'Ismael Ripoll'
-release = 'v0.1.12'
+release = 'v0.1.13'
 
 extensions = ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary',
               'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
@@ -29,6 +29,8 @@ html_css_files = ['custom.css']
 html_sidebars = {
     "**": ["search-field", "sidebar-nav-bs"]  # Show the sidebar and search field everywhere
 }
+
+html_baseurl = 'https://refpy.github.io/refpy/'
 
 html_show_sourcelink = False
 

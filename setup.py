@@ -18,8 +18,7 @@ setup(
     python_requires='>=3.11',
     install_requires=[],
     project_urls={
-        "Documentation": "https://refpy.github.io",
+        "Documentation": "https://refpy.github.io/refpy",
         "Source": "https://github.com/refpy/refpy",
         "Tracker": "https://github.com/refpy/refpy/issues",
     }
-)
