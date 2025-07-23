@@ -16,7 +16,7 @@ Project Philosophy
  
  The repository has been made publicly accessible to encourage collaboration and knowledge sharing among colleagues, while maintaining that all proprietary or confidential information remains excluded. It has been made available to allow colleagues to review, build upon, and make use of it in a collaborative and open manner, in the hope that this may give the repository a chance to continue improving beyond its original scope.
 
-  - RefPy has made available with the intend of allowing the community to review, expand and use it under a `MIT License <https://github.com/refpy/refpy/blob/main/LICENSE>`_.
+  - RefPy has made available with the intend of allowing the community to review, expand and use it under a `MIT License <https://github.com/refpy/refpy/blob/main/LICENSE>`_. The MIT license is one of the most permissive open-source licenses, allowing for reuse and modification with minimal restrictions.
 
   - Source code: The source code is saved in `GitHub <https://github.com/refpy/refpy>`_.
 
