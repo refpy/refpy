@@ -26,7 +26,7 @@ Project Philosophy
 Project Member
 **************
 
- The management of this open-source project is carried out by `Ismael Ripoll <https://github.com/ ismael-ripoll>`_, the project founder and currentl maintainer.
+ The management of this open-source project is carried out by `Ismael Ripoll <https://github.com/ ismael-ripoll>`_, the project founder and current maintainer.
 
  While RefPy is currently a personal initiative led by Ismael Ripoll, the project is hosted under the  dedicated refpy GitHub organisation rather than a personal account. Although there is no immediate  intention to formally announce or release the project or expand the team, this structure has been adopted to maintain flexibility for any future developments and to facilitate transparent and manageable   collaboration if it occurs.
 
