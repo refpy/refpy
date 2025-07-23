@@ -1,28 +1,14 @@
 # RefPy
 
-RefPy is a package for the design of subsea pipelines and risers in Python
+RefPy is a package for the design of subsea pipelines and risers in Python.
+
+RefPy is a personal project developed by Ismael Ripoll to consolidate and automate tasks frequently encountered in his daily engineering routine, with the aim of having them version-controlled and accessible through a structured repository.
+
+The development and usage of RefPy are strictly limited to personal, non-commercial use, with a focus on training, experimentation, and the structured compilation of knowledge. This project is maintained independently and does not relate to or interfere with Ismael's professional responsibilities as an employee. It serves as a personal learning tool and a way to consolidate practical insights outside the scope of his employment.
+
+The repository has been made publicly accessible to encourage collaboration and knowledge sharing among colleagues, while maintaining that all proprietary or confidential information remains excluded. It has been made available to allow colleagues to review, build upon, and make use of it in a collaborative and open manner, in the hope that this may give the repository a chance to continue improving beyond its original scope.
 
 * Website: https://www.refpy.org
 * Documentation: https://refpy.github.io/refpy
 * Source code: https://github.com/refpy/refpy
 * Bug reports: https://github.com/refpy/refpy/issues
-
-The current version provides:
-
-* Functions to determine general pipeline properties
-* Functions to determine properties for lateral buckling design
-
-# Call for Contributions
-The RefPy project welcomes your expertise and enthusiasm!
-
-Small improvements or fixes are always appreciated. If you are considering larger contributions to the source code, please leave a comment on GitHub first.
-
-Writing code is not the only way to contribute to RefPy. You can also:
-
-* review pull requests
-* help us stay on top of new and old issues
-* develop tutorials, presentations, and other educational materials
-* maintain and improve our website
-* develop graphic design for our brand assets and promotional materials
-* translate website content (Spanish and Chinese)
-* help with outreach and onboard new contributors
