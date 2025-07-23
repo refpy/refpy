@@ -42,7 +42,7 @@ html_theme_options = {
     "icon_links": [                    # Icons in the top bar (e.g., GitHub)
         {
             "name": "GitHub",
-            "url": "https://github.com/refpy/refpy/",
+            "url": "https://refpy.github.io/refpy/",
             "icon": "fab fa-github",
         },
     ],
