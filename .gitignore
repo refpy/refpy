@@ -3,9 +3,5 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Ignore PyPi Files
-dist/
-refpy.egg-info/
-
 # Ignore Sphinx Files
 docs/_build/

@@ -26,7 +26,7 @@ def example1():
 
     # Import design data
     df = pd.read_excel(
-        'example_refpy.xlsx', sheet_name='Example1', header=None).iloc[1:].transpose()
+        'example_1_2.xlsx', sheet_name='Example1', header=None).iloc[1:].transpose()
     df.columns = df.iloc[0].to_numpy()
     df = df[1:].reset_index(drop=True)
 
@@ -52,7 +52,7 @@ def example1():
     df['Burst Pressure'] = dnv.burst_pressure()
 
     # Example of PSI calculation
-    psi = refpy.PipeSoilInteraction(
+    psi = refpy.PSI(
         total_outer_diameter = df['Total Outer Diameter'],
         surface_roughness = df['Surface Roughness'],
         density = df['Density'],
@@ -64,7 +64,7 @@ def example1():
     df['Vertical Bearing Capacity Arrays'] = list(vertical_bearing_capacity_arrays)
 
     # Example of lateral buckling calculation
-    lb = refpy.LateralBuckling(
+    lb = refpy.LBDistributions(
         friction_factor_le = df['Lateral Friction Factor - LE'],
         friction_factor_be = df['Lateral Friction Factor - BE'],
         friction_factor_he = df['Lateral Friction Factor - HE'],
@@ -212,15 +212,16 @@ def example2_plot1(df):
     Each (Pipeline, Section No) is shown as a separate line in each subplot.
     For the Curve subplot, annotates each line with the first value of
     'Design Route Curve Radius' and 'Actual Route Curve Radius'.
-    Also adds scatter markers for survey features (PWMD, LBMD, ILT) with feature names in the legend.
+    Also adds scatter markers for survey features (PWMD, LBMD, ILT) with feature names in the
+    legend.
     """
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    _, axes = plt.subplots(1, 2, figsize=(14, 6))
     section_types = ['Straight', 'Curve']
     feature_types = ['PWMD', 'LBMD', 'ILT']
     feature_markers = itertools.cycle(['o', 's', '^'])
     feature_colors = itertools.cycle(['black', 'black', 'black'])
-    for idx, (ax, sec_type) in enumerate(zip(axes, section_types)):
+    for _, (ax, sec_type) in enumerate(zip(axes, section_types)):
         grouped = (
             df[df['Section Type'] == sec_type]
             .groupby(['Development', 'Survey Type', 'Pipeline Group', 'Pipeline', 'Section No'])
@@ -270,12 +271,14 @@ def example2_plot1(df):
     mng = plt.get_current_fig_manager()
     try:
         mng.window.state('zoomed')  # For TkAgg backend (Windows)
-    except Exception:
+    except AttributeError:
         try:
             mng.window.showMaximized()  # For Qt backend
-        except Exception:
+        except AttributeError:
             pass  # If backend does not support maximising
+    plt.savefig('example_2_plot1.png', dpi=300, bbox_inches='tight')
     plt.show()
+
 
 def example2_plot2(df):
     """
@@ -286,14 +289,14 @@ def example2_plot2(df):
     'Design Route Curve Radius' and 'Actual Route Curve Radius'.
     """
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    _, axes = plt.subplots(1, 2, figsize=(14, 6))
     section_types = ['Straight', 'Curve']
     index = 0
     for (ax, sec_type) in zip(axes, section_types):
         # Filter for section type
         df_sec = df[df['Section Type'] == sec_type]
         # Group by Pipeline Group and Group Section No
-        for idx, (ax, sec_type) in enumerate(zip(axes, section_types)):
+        for _, (ax, sec_type) in enumerate(zip(axes, section_types)):
             grouped = (
                 df_sec[df_sec['Section Type'] == sec_type]
                 .groupby(['Development', 'Survey Type', 'Pipeline Group', 'Group Section No'])
@@ -345,11 +348,12 @@ def example2_plot2(df):
     mng = plt.get_current_fig_manager()
     try:
         mng.window.state('zoomed')  # For TkAgg backend (Windows)
-    except Exception:
+    except AttributeError:
         try:
             mng.window.showMaximized()  # For Qt backend
-        except Exception:
+        except AttributeError:
             pass  # If backend does not support maximising
+    plt.savefig('example_2_plot2.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 def example2_plot3(df1, df2):
@@ -390,7 +394,7 @@ def example2_plot3(df1, df2):
     group_cols = ['Development', 'Survey Type', 'Pipeline Group', 'Section Type']
     unique_groups = df1[group_cols].drop_duplicates().itertuples(index=False, name=None)
 
-    fig, a1 = plt.subplots(1, 1, figsize=(14, 6))
+    _, a1 = plt.subplots(1, 1, figsize=(14, 6))
 
     for idx, group in enumerate(unique_groups):
 
@@ -454,27 +458,31 @@ def example2_plot3(df1, df2):
     mng = plt.get_current_fig_manager()
     try:
         mng.window.state('zoomed')  # For TkAgg backend (Windows)
-    except Exception:
+    except AttributeError:
         try:
             mng.window.showMaximized()  # For Qt backend
-        except Exception:
+        except AttributeError:
             pass  # If backend does not support maximising
+    plt.savefig('example_2_plot3.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 ###
 ### Example 1
 ###
 dfe1 = example1()
-# print(dfe1.head())
+dfe1 = dfe1.transpose()
+new_cols = [f'Sensitivity{i}' for i in range(1, dfe1.shape[1]+1)]
+dfe1.columns = new_cols[:dfe1.shape[1]]
+dfe1.to_csv('example_1_output.csv')
 
 ###
 ### Example 2
 ###
-FILENAME = 'example_refpy.xlsx'
+FILENAME = 'example_1_2.xlsx'
 DEVELOPMENT = ['Example']
 SURVEY_TYPE = ['As-Laid', 'Processed']
 PIPELINE_GROUP = ['PG1']
-PIPELINE = ['P2']
+PIPELINE = ['P1']
 FFT_CUTOFF_WAVELENGTH = 16.0  # FFT cutoff wavelength in meters
 GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
 dfe2_1, dfe2_2, dfe2_3 = example2_data()

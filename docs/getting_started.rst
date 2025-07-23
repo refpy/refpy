@@ -6,14 +6,14 @@ Getting Started
 
    <hr style="height:6px; background-color:#888; border:none; margin:1.5em 0;" />
 
-**********************
+***********************************
 About RefPy: A Foundational Library
-**********************
+***********************************
 
 RefPy is designed as a foundational library for pipeline and riser design. A foundational library provides core building blocks and reusable components that can be used directly in your own scripts, applications, or larger frameworks. It is not a standalone application, but rather a toolkit that enables rapid development and robust analysis by providing well-tested, well-documented, and efficient functions and classes.
 
 What is a Foundational Library?
-------------------------------
+-------------------------------
 
 A foundational library is a collection of essential tools and abstractions that serve as the basis for more complex workflows and applications. It is intended to be imported and used as a dependency in your own Python code, rather than run as a program by itself. Foundational libraries are typically:
 
@@ -23,7 +23,7 @@ A foundational library is a collection of essential tools and abstractions that 
 - Designed for integration into other projects
 
 Current Modules in RefPy
------------------------
+------------------------
 
 RefPy currently includes the following modules:
 
@@ -87,15 +87,45 @@ To run the example script, execute the following command in your terminal from t
 
 .. code-block:: bash
 
-   $ python example_refpy.py
+   $ python example_1_2_refpy.py
 
 What Does It Demonstrate?
-------------------------
+-------------------------
 
-The ``example_refpy.py`` script contains two worked examples:
+The ``example_1_2_refpy.py`` script contains two worked examples:
 
-- **Pipe Example:** Demonstrates how to create and use the ``Pipe`` class for pipeline property calculations.
+- **Pipe, DNV, PSI, LBDistributions Example:** Demonstrates how to create and use the ``Pipe``, ``DNVLimitStates``, ``PSI``, ``LBDistributions`` classes for pipeline property calculations.
 - **OOSSmoother and OOSAnonymisation Example:** Shows how to use the ``OOSSmoother`` and ``OOSAnonymisation`` classes for group-wise signal processing and survey data anonymisation.
 
-The script reads its input data from within the file itself (no external files required) and prints results to the console. You can use it as a template for your own analyses or to verify that the package is working as expected.
+.. figure:: _static/example_1.png
+   :alt: Example 1
+   :width: 400
+   :align: center
 
+   Example 1: Pipe, DNV, PSI and LB Calculations
+
+.. figure:: _static/example_2_plot1.png
+   :alt: Example 2 Plot 1
+   :width: 600
+   :align: center
+
+   Example 2, Plot 1: Survey Route Overview. This plot is useful to visualise the out-of-straightness per survey section. It splits the survey route into individual sections and displays the out-of-straightness for each section, distinguishing between nominally straight and curved sections.
+
+.. figure:: _static/example_2_plot2.png
+   :alt: Example 2 Plot 2
+   :width: 600
+   :align: center
+
+.. figure:: _static/example_2_plot2b.png
+   :alt: Example 2 Plot 2
+   :width: 600
+   :align: center
+
+   Example 2, Plot 2: Anonymised Smoothing. These plots intend to visualise how the anonymisation and smoothing processes affect the survey data at the pipeline group level.
+
+.. figure:: _static/example_2_plot3.png
+   :alt: Example 2 Plot 3
+   :width: 600
+   :align: center
+
+   Example 2, Plot 3: Spectral Analysis. This plot visualises the wavelength distribution of the survey data, highlighting the noise associated with the survey.
