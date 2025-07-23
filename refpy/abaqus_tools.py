@@ -138,7 +138,7 @@ class AbaqusPy:
                 if py_bool:
                     sens_file.write(line)
 
-    def _run(self):
+    def run(self):
         """
         Run the full process: read template, replace parameters, create function file,
         and create the final sensitivity file.

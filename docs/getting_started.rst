@@ -78,16 +78,17 @@ This makes it easy to check that all core functionality is working as intended a
 Running Example Scripts
 ***********************
 
-The repository also includes a file called ``example_refpy.py`` that demonstrates how to use the main features of RefPy with real input data. This script is a practical starting point for new users.
+The repository also includes two files called ``example_1_refpy.py`` and ``example_2_refpy.py`` that demonstrates how to use the main features of RefPy with real input data. This script is a practical starting point for new users.
 
 How to Run the Example
 ----------------------
 
-To run the example script, execute the following command in your terminal from the root of the repository:
+To run the example scripts, execute the following commands in your terminal from the root of the repository:
 
 .. code-block:: bash
 
    $ python example_1_2_refpy.py
+   $ python example_3_refpy.py
 
 What Does It Demonstrate?
 -------------------------
@@ -96,6 +97,10 @@ The ``example_1_2_refpy.py`` script contains two worked examples:
 
 - **Pipe, DNV, PSI, LBDistributions Example:** Demonstrates how to create and use the ``Pipe``, ``DNVLimitStates``, ``PSI``, ``LBDistributions`` classes for pipeline property calculations.
 - **OOSSmoother and OOSAnonymisation Example:** Shows how to use the ``OOSSmoother`` and ``OOSAnonymisation`` classes for group-wise signal processing and survey data anonymisation.
+
+The ``example_3_refpy.py`` script contains one worked example:
+
+- **AbaqusPy Example:** Illustrates how to use the ``AbaqusPy`` class for generating Abaqus input files with sensitivity analysis.
 
 .. figure:: _static/example_1.png
    :alt: Example 1
