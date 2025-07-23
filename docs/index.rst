@@ -13,9 +13,11 @@ Project Philosophy
  **RefPy** is an open-source code for pipeline and riser design.
 
  **RefPy** is a personal project developed by Ismael Ripoll to consolidate and automate tasks frequently encountered in his daily engineering routine, with the aim of having them version-controlled and accessible through a structured repository.
- 
- The repository has been made publicly accessible to encourage collaboration and knowledge sharing among colleagues, while maintaining that all proprietary or confidential information remains excluded. It has been made available to allow colleagues to review, build upon, and make use of it in a collaborative and open manner, in the hope that this may give the repository a chance to continue improving beyond its original scope.
 
+ Ismael Ripoll has no intention to use **RefPy** for any commercial purposes. Its development and usage are strictly limited to personal use, with a focus on training, experimentation, and the structured compilation of knowledge. The project serves as a learning tool and a way to document and consolidate practical insights, rather than as a product intended for commercial deployment or distribution.
+
+ The repository has been made publicly accessible to encourage collaboration and knowledge sharing among colleagues, while maintaining that all proprietary or confidential information remains excluded. It has been made available to allow colleagues to review, build upon, and make use of it in a collaborative and open manner, in the hope that this may give the repository a chance to continue improving beyond its original scope.
+ 
   - RefPy has made available with the intend of allowing the community to review, expand and use it under a `MIT License <https://github.com/refpy/refpy/blob/main/LICENSE>`_. The MIT license is one of the most permissive open-source licenses, allowing for reuse and modification with minimal restrictions.
 
   - Source code: The source code is saved in `GitHub <https://github.com/refpy/refpy>`_.
