@@ -14,7 +14,7 @@ Project Philosophy
 
  **RefPy** is a personal project developed by Ismael Ripoll to consolidate and automate tasks frequently encountered in his daily engineering routine, with the aim of having them version-controlled and accessible through a structured repository.
 
- Ismael Ripoll has no intention to use **RefPy** for any commercial purposes. Its development and usage are strictly limited to personal use, with a focus on training, experimentation, and the structured compilation of knowledge. The project serves as a learning tool and a way to document and consolidate practical insights, rather than as a product intended for commercial deployment or distribution.
+ The development and usage of **RefPy** are strictly limited to personal, non-commercial use, with a focus on training, experimentation, and the structured compilation of knowledge. This project is maintained independently and does not relate to or interfere with Ismael's professional responsibilities as an employee. It serves as a personal learning tool and a way to consolidate practical insights outside the scope of his employment.
 
  The repository has been made publicly accessible to encourage collaboration and knowledge sharing among colleagues, while maintaining that all proprietary or confidential information remains excluded. It has been made available to allow colleagues to review, build upon, and make use of it in a collaborative and open manner, in the hope that this may give the repository a chance to continue improving beyond its original scope.
  
