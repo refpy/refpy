@@ -1,14 +1,55 @@
 '''
-Library of DNV limit states
+This module provides classes and functions for calculating DNV pipeline limit states and material
+properties.
+
+Features:
+ - The `DNVGeneral` class implements calculations for temperature derating, yield and tensile
+   strength, and characteristic material burst strength, supporting both scalar and array-based
+   inputs.
+ - The `DNVLimitStates` class extends `DNVGeneral` and provides burst pressure calculations for
+   pipelines according to DNV standards.
+ - Designed for use in subsea pipeline and riser engineering, but general enough for any DNV-based
+   pipeline property calculations.
+
+All calculations are vectorized using NumPy for efficiency and flexibility.
+
+.. raw:: html
+
+   <hr style="height:6px; background-color:#888; border:none; margin:1.5em 0;" />
+
 '''
 
 import numpy as np
-from refpy import Pipe
 
-class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-arguments
+class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-arguments
     """
-    Class for DNV limit state calculations.
+    Base class for DNV pipeline limit state calculations.
+
+    Provides methods for temperature derating, yield and tensile strength, and characteristic
+    material burst strength, supporting both scalar and array-based inputs.
+
+    Parameters
+    ----------
+    outer_diameter : np.ndarray, optional
+        The outer diameter of the pipeline.
+    corroded_wall_thickness : np.ndarray, optional
+        The corroded wall thickness of the pipeline.
+    material : np.ndarray, optional
+        Material types: 1 for 'CMn' or '13CR', 2 for '22Cr' or '25CR'.
+    smys : np.ndarray, optional
+        Specified minimum yield strengths.
+    smts : np.ndarray, optional
+        Specified minimum tensile strengths.
+    temperature : np.ndarray, optional
+        Temperatures for calculations.
+    material_strength_factor : np.ndarray, optional
+        Material strength factor.
+
+    Notes
+    -----
+    All calculations are vectorized using NumPy for efficiency and flexibility.
     """
+
     def __init__(
             self,
             *,
@@ -22,23 +63,6 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         ):
         """
         Initialize with material, strength, and geometric properties.
-
-        Parameters
-        ----------
-        outer_diameter : np.ndarray
-            The outer diameter of the pipeline.
-        corroded_wall_thickness : np.ndarray
-            The corroded wall thickness of the pipeline.
-        material : np.ndarray
-            Material types: 1 for 'CMn' or '13CR', 2 for '22Cr' or '25CR'.
-        smys : np.ndarray
-            Specified minimum yield strengths.
-        smts : np.ndarray
-            Specified minimum tensile strengths.
-        temperature : np.ndarray
-            Temperatures for calculations.
-        material_strength_factor : np.ndarray
-            Material strength factor.
         """
         self.outer_diameter = np.asarray(outer_diameter, dtype = float)
         self.corroded_wall_thickness = np.asarray(corroded_wall_thickness, dtype = float)
@@ -66,7 +90,10 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         --------
         >>> materials = np.array([1, 1, 2, 2])
         >>> temperatures = np.array([80.0, 110.0, 80.0, 110.0])
-        >>> dnv = DNVLimitStates(material=materials, temperature=temperatures)
+        >>> dnv = DNVGeneral(
+        ...     material=materials, 
+        ...     temperature=temperatures
+        ... )
         >>> dnv.temperature_derating_stress()
         array([18000000., 34000000., 70000000., 95000000.])
         """
@@ -100,7 +127,12 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         >>> smys = np.array([450.0E+06, 450.0E+06, 550.0E+06, 550.0E+06])
         >>> temperatures = np.array([80.0, 110.0, 80.0, 110.0])
         >>> material_strength_factor = np.array([0.96, 0.96, 0.96, 0.96])
-        >>> dnv = DNVLimitStates(material=materials, smys=smys, temperature=temperatures, material_strength_factor=material_strength_factor)
+        >>> dnv = DNVGeneral(
+        ...     material=materials,
+        ...     smys=smys,
+        ...     temperature=temperatures,
+        ...     material_strength_factor=material_strength_factor
+        ... )
         >>> dnv.yield_stress()
         array([4.1472e+08, 3.9936e+08, 4.6080e+08, 4.3680e+08])
         """
@@ -123,7 +155,12 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         >>> smts = np.array([485.0E+06, 485.0E+06, 590.0E+06, 590.0E+06])
         >>> temperatures = np.array([80.0, 110.0, 80.0, 110.0])
         >>> material_strength_factor = np.array([0.96, 0.96, 0.96, 0.96])
-        >>> dnv = DNVLimitStates(material=materials, smts=smts, temperature=temperatures, material_strength_factor=material_strength_factor)
+        >>> dnv = DNVGeneral(
+        ...     material=materials,
+        ...     smts=smts,
+        ...     temperature=temperatures,
+        ...     material_strength_factor=material_strength_factor
+        ... )
         >>> dnv.tensile_strength()
         array([4.4832e+08, 4.3296e+08, 4.9920e+08, 4.7520e+08])
         """
@@ -147,13 +184,49 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         >>> smts = np.array([600.0E+06, 600.0E+06, 700.0E+06, 700.0E+06])
         >>> temperatures = np.array([80.0, 110.0, 80.0, 110.0])
         >>> material_strength_factor = np.array([0.96, 0.96, 0.96, 0.96])
-        >>> dnv = DNVLimitStates(material=materials, smys=smys, smts=smts, temperature=temperatures, material_strength_factor=material_strength_factor)
+        >>> dnv = DNVGeneral(
+        ...     material=materials,
+        ...     smys=smys,
+        ...     smts=smts,
+        ...     temperature=temperatures,
+        ...     material_strength_factor=material_strength_factor
+        ... )
         >>> dnv.characteristic_material_burst_strength()
         array([4.1472e+08, 3.9936e+08, 4.6080e+08, 4.3680e+08])
         """
         yield_stress_value = self.yield_stress()
         tensile_strength_value = self.tensile_strength()
         return np.minimum(yield_stress_value, tensile_strength_value / 1.15)
+
+
+class DNVLimitStates(DNVGeneral):
+    """
+    Class for DNV pipeline burst pressure limit state calculations.
+
+    Extends `DNVGeneral` to provide burst pressure calculations for corroded pipelines
+    according to DNV standards, using material, geometric, and strength properties.
+
+    Parameters
+    ----------
+    outer_diameter : np.ndarray, optional
+        The outer diameter of the pipeline.
+    corroded_wall_thickness : np.ndarray, optional
+        The corroded wall thickness of the pipeline.
+    material : np.ndarray, optional
+        Material types: 1 for 'CMn' or '13CR', 2 for '22Cr' or '25CR'.
+    smys : np.ndarray, optional
+        Specified minimum yield strengths.
+    smts : np.ndarray, optional
+        Specified minimum tensile strengths.
+    temperature : np.ndarray, optional
+        Temperatures for calculations.
+    material_strength_factor : np.ndarray, optional
+        Material strength factor.
+
+    Notes
+    -----
+    All parameters are passed to the parent class `DNVGeneral`.
+    """
 
     def burst_pressure(self):
         """
@@ -178,9 +251,21 @@ class DNVLimitStates: # pylint: disable=too-many-instance-attributes, too-many-a
         >>> smts = np.array([600.0E+06, 600.0E+06, 700.0E+06, 700.0E+06])
         >>> temperatures = np.array([80.0, 110.0, 80.0, 110.0])
         >>> material_strength_factor = np.array([0.96, 0.96, 0.96, 0.96])
-        >>> dnv = DNVLimitStates(outer_diameter=outer_diameter, corroded_wall_thickness=corroded_wall_thickness, material=materials, smys=smys, smts=smts, temperature=temperatures, material_strength_factor=material_strength_factor)
+        >>> dnv = DNVLimitStates(
+        ...     outer_diameter=outer_diameter,
+        ...     corroded_wall_thickness=corroded_wall_thickness,
+        ...     material=materials,
+        ...     smys=smys,
+        ...     smts=smts,
+        ...     temperature=temperatures,
+        ...     material_strength_factor=material_strength_factor
+        ... )
         >>> dnv.burst_pressure()
         array([35270393.70222808, 38255444.18258572, 39189326.33580898, 41841892.07470313])
         """
         fcb = self.characteristic_material_burst_strength()
-        return (2.0 * self.corroded_wall_thickness) / (self.outer_diameter - self.corroded_wall_thickness) * fcb * 2.0 / np.sqrt(3.0)
+        return (
+            (2.0 * self.corroded_wall_thickness)
+            / (self.outer_diameter - self.corroded_wall_thickness)
+            * fcb * 2.0 / np.sqrt(3.0)
+        )

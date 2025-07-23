@@ -1,5 +1,22 @@
+# pylint: disable=too-many-lines
 '''
-This library performs various calculations to analyse the OOS data.
+This module provides classes and functions for processing and analyzing Out-Of-Straightness (OOS)
+pipeline survey and route data.
+
+Features:
+ - The `OOSAnonymisation` class processes OOS survey and route data, providing methods for
+   cleaning, sectioning, coordinate normalization, and anonymization of pipeline survey datasets.
+ - The `OOSSmoother` class implements group-wise signal processing and smoothing (FFT, Gaussian,
+   etc.)
+   for OOS survey data, supporting robust, efficient, and reproducible analysis.
+ - Designed for use in subsea pipeline and riser engineering, but general enough for any OOS survey
+   data processing and analysis tasks.
+
+All calculations are vectorized using NumPy and SciPy for efficiency and flexibility.
+
+.. raw:: html
+
+   <hr style="height:6px; background-color:#888; border:none; margin:1.5em 0;" />
 '''
 
 import numpy as np
@@ -7,10 +24,47 @@ from scipy.optimize import leastsq
 from scipy.fft import fft, ifft, fftfreq
 from scipy.signal import welch
 
-class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals, too-few-public-methods
     """
     Processor for Out-Of-Straightness (OOS) pipeline survey and route data.
     Provides methods for cleaning, sectioning, and coordinate normalization.
+
+    Parameters
+    ----------
+    route_development : array-like, mandatory
+        Development identifiers for each route section.
+    route_pipeline_group : array-like, mandatory
+        Pipeline group identifiers for each route section.
+    route_pipeline : array-like, mandatory
+        Pipeline identifiers for each route section.
+    route_kp_from : array-like, mandatory
+        Start KP (kilometer point) for each route section.
+    route_kp_to : array-like, mandatory
+        End KP (kilometer point) for each route section.
+    route_pipeline_section_type : array-like, mandatory
+        Section type (e.g., 'Straight', 'Curve', etc.) for each route section.
+    route_curve_radius : array-like, mandatory
+        Design curve radius for each route section.
+    survey_development : array-like, mandatory
+        Development identifiers for each survey point.
+    survey_type : array-like, mandatory
+        Survey type for each survey point.
+    survey_pipeline_group : array-like, mandatory
+        Pipeline group identifiers for each survey point.
+    survey_pipeline : array-like, mandatory
+        Pipeline identifiers for each survey point.
+    survey_kp : array-like, mandatory
+        KP (kilometer point) for each survey point.
+    survey_easting : array-like, mandatory
+        Easting coordinate for each survey point.
+    survey_northing : array-like, mandatory
+        Northing coordinate for each survey point.
+
+    Notes
+    -----
+    All input arrays are converted to NumPy arrays and stored as attributes. Additional
+    attributes for section types, numbers, radii, and modified coordinates are
+    initialized as NumPy arrays and will be populated by processing methods.
     """
     def __init__(
             self,
@@ -32,43 +86,6 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         ):
         """
         Initialize an OOSAnonymisation object with route and survey data.
-
-        Parameters
-        ----------
-        route_development : array-like
-            Development identifiers for each route section.
-        route_pipeline_group : array-like
-            Pipeline group identifiers for each route section.
-        route_pipeline : array-like
-            Pipeline identifiers for each route section.
-        route_kp_from : array-like
-            Start KP (kilometer point) for each route section.
-        route_kp_to : array-like
-            End KP (kilometer point) for each route section.
-        route_pipeline_section_type : array-like
-            Section type (e.g., 'Straight', 'Curve', etc.) for each route section.
-        route_curve_radius : array-like
-            Design curve radius for each route section.
-        survey_development : array-like
-            Development identifiers for each survey point.
-        survey_type : array-like
-            Survey type for each survey point.
-        survey_pipeline_group : array-like
-            Pipeline group identifiers for each survey point.
-        survey_pipeline : array-like
-            Pipeline identifiers for each survey point.
-        survey_kp : array-like
-            KP (kilometer point) for each survey point.
-        survey_easting : array-like
-            Easting coordinate for each survey point.
-        survey_northing : array-like
-            Northing coordinate for each survey point.
-
-        Notes
-        -----
-        All input arrays are converted to NumPy arrays and stored as attributes. Additional
-        attributes for section types, numbers, radii, and modified coordinates are
-        initialized as NumPy arrays and will be populated by processing methods.
         """
         self.route_development = np.asarray(route_development, dtype=object)
         self.route_pipeline_group = np.asarray(route_pipeline_group, dtype=object)
@@ -106,6 +123,21 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             self.survey_kp.shape[0], np.nan, dtype=float
         )
         self.survey_section_kp_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_group_section_no = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_group_section_type = np.full(
+            self.survey_kp.shape[0], '', dtype=object
+        )
+        self.survey_group_section_easting_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_group_section_northing_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_group_section_kp_mod = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
 
@@ -286,7 +318,8 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             radius_i = calc_radius(x, y, xc, yc)
             radius = radius_i.mean()
             return radius
-        # Group by (development, survey_type, survey_pipeline_group, survey_pipeline, survey_section_no)
+        # Group by (development, survey_type, survey_pipeline_group,
+        # survey_pipeline, survey_section_no)
         group_tuples = list(zip(
             self.survey_development,
             self.survey_type,
@@ -530,7 +563,7 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         self.survey_group_section_no = group_section_no
         self.survey_group_section_type = self.survey_section_type.copy()
 
-    def _transform_pipeline_group_section_coordinates(self):
+    def _transform_pipeline_group_section_coordinates(self): # pylint: disable=too-many-statements
         """
         Compute and add group section-modified coordinates and KP for each pipeline group
         section.
@@ -689,12 +722,72 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             min_north = np.min(self.survey_group_section_northing_mod[idx])
             if abs(max_north) < abs(min_north):
                 # Flip the sign of northing
-                self.survey_group_section_northing_mod[idx] = -self.survey_group_section_northing_mod[idx]
+                self.survey_group_section_northing_mod[idx] = (
+                    -self.survey_group_section_northing_mod[idx]
+                )
 
 class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
     Class to perform FFT filtering and spectral analysis on 1D signals, grouped by
     (development, survey type, pipeline group, group section type).
+    
+    Parameters
+    ----------
+    development : array_like, mandatory
+        Development identifier for each point.
+    survey_type : array_like, mandatory
+        Survey type for each point.
+    pipeline_group : array_like, mandatory
+        Pipeline group for each point.
+    group_section_type : array_like, mandatory
+        Group section type for each point.
+    group_section_number : array_like, mandatory
+        Group section number for each point.
+    x : array_like, mandatory
+        The x-coordinates (e.g., distance or KP) for all points.
+    y : array_like, mandatory
+        The y-values (signal) for all points.
+    fft_cutoff_wl : float or None, mandatory
+        Wavelength cutoff for FFT filtering. If None, no filtering is applied.
+    gaussian_bandwidth : float, mandatory
+        Bandwidth for Gaussian filtering. Default is 4.0.
+
+    Attributes
+    ----------
+    y_smooth : np.ndarray
+        Array of filtered y-values, aligned with input y (NaN for points not in a group).
+    freqs : np.ndarray
+        Array of frequency values, aligned with input y (NaN for points not in a group).
+    fft : np.ndarray
+        Array of filtered FFT values, aligned with input y (NaN for points not in a group).
+    freqs_raw : np.ndarray
+        Array of raw (unfiltered) frequency values, aligned with input y
+        (NaN for points not in a group).
+    fft_raw : np.ndarray
+        Array of raw (unfiltered) FFT values, aligned with input y
+        (NaN for points not in a group).
+    psd_development : list of np.ndarray
+        For each group, an array filled with the development value,
+        same length as the PSD frequency array (set by fft_welch).
+    psd_survey_type : list of np.ndarray
+        For each group, an array filled with the survey type value,
+        same length as the PSD frequency array (set by fft_welch).
+    psd_survey_number : list of np.ndarray
+        For each group, an array filled with the survey number,
+        same length as the PSD frequency array (set by fft_welch).
+    psd_pipeline_group : list of np.ndarray
+        For each group, an array filled with the pipeline group value,
+        same length as the PSD frequency array (set by fft_welch).
+    psd_group_section_type : list of np.ndarray
+        For each group, an array filled with the group section type value,
+        same length as the PSD frequency array (set by fft_welch).
+    psd_freqs : list of np.ndarray
+        List of frequency arrays for each group (set by fft_welch).
+    psd_vals : list of np.ndarray
+        List of PSD arrays for each group (set by fft_welch).
+    y_smooth_gaussian : np.ndarray
+        Array of filtered y-values using the gaussian filter,
+        aligned with input y (NaN for points not in a group).
     """
     def __init__(
             self,
@@ -711,64 +804,6 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         ):
         """
         Initialize an OOSAnonymisation object with route and survey data.
-
-        Parameters
-        ----------
-        development : array_like
-            Development identifier for each point.
-        survey_type : array_like
-            Survey type for each point.
-        pipeline_group : array_like
-            Pipeline group for each point.
-        group_section_type : array_like
-            Group section type for each point.
-        group_section_number : array_like
-            Group section number for each point.
-        x : array_like
-            The x-coordinates (e.g., distance or KP) for all points.
-        y : array_like
-            The y-values (signal) for all points.
-        fft_cutoff_wl : float or None, optional
-            Wavelength cutoff for FFT filtering. If None, no filtering is applied.
-        gaussian_bandwidth : float, optional
-            Bandwidth for Gaussian filtering. Default is 4.0.
-
-        Attributes
-        ----------
-        y_smooth : np.ndarray
-            Array of filtered y-values, aligned with input y (NaN for points not in a group).
-        freqs : np.ndarray
-            Array of frequency values, aligned with input y (NaN for points not in a group).
-        fft : np.ndarray
-            Array of filtered FFT values, aligned with input y (NaN for points not in a group).
-        freqs_raw : np.ndarray
-            Array of raw (unfiltered) frequency values, aligned with input y
-            (NaN for points not in a group).
-        fft_raw : np.ndarray
-            Array of raw (unfiltered) FFT values, aligned with input y
-            (NaN for points not in a group).
-        psd_development : list of np.ndarray
-            For each group, an array filled with the development value,
-            same length as the PSD frequency array (set by fft_welch).
-        psd_survey_type : list of np.ndarray
-            For each group, an array filled with the survey type value,
-            same length as the PSD frequency array (set by fft_welch).
-        psd_survey_number : list of np.ndarray
-            For each group, an array filled with the survey number,
-            same length as the PSD frequency array (set by fft_welch).
-        psd_pipeline_group : list of np.ndarray
-            For each group, an array filled with the pipeline group value,
-            same length as the PSD frequency array (set by fft_welch).
-        psd_group_section_type : list of np.ndarray
-            For each group, an array filled with the group section type value,
-            same length as the PSD frequency array (set by fft_welch).
-        psd_freqs : list of np.ndarray
-            List of frequency arrays for each group (set by fft_welch).
-        psd_vals : list of np.ndarray
-            List of PSD arrays for each group (set by fft_welch).
-        y_smooth_gaussian : np.ndarray
-            Array of filtered y-values using the gaussian filter,
-            aligned with input y (NaN for points not in a group).
         """
         # Convert to arrays
         self.development = np.asarray(development, dtype=object)
@@ -815,7 +850,7 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         the attributes `fft_raw` and `freqs_raw`.
 
         Sets the following attributes:
-        -----------------------------
+        ------------------------------
         y_smooth : ndarray
             Array of filtered y-values, aligned with input y
             (NaN for points not in a group).
@@ -903,7 +938,7 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         an appropriate cutoff wavelength for filtering out noise.
 
         Sets the following attributes:
-        -----------------------------
+        ------------------------------
         psd_development : list of ndarray
             For each group, an array filled with the development value,
             same length as the PSD frequency array.

@@ -1,5 +1,20 @@
 '''
-Library of pipeline main properties
+This module provides the core class and functions for representing and calculating the main
+geometric and material properties of pipeline sections.
+
+Features:
+ - The `Pipe` class encapsulates the geometry and material characteristics of a pipeline section,
+   supporting both scalar and array-based calculations for batch processing.
+ - Methods for computing inner/outer diameters, areas, steel and coating cross-sections, stiffness,
+   and moments of inertia.
+ - Designed for use in subsea pipeline and riser engineering, but general enough for any pipeline
+   property calculations.
+
+All calculations are vectorized using NumPy for efficiency and flexibility.
+
+.. raw:: html
+
+   <hr style="height:6px; background-color:#888; border:none; margin:1.5em 0;" />
 '''
 
 import numpy as np
@@ -7,6 +22,19 @@ class Pipe: # pylint: disable=too-many-arguments
     """
     Class representing a pipeline section with geometric and material properties.
     Supports both scalar and array inputs for calculations.
+
+    Parameters
+    ----------
+    outer_diameter : float, array-like, mandatory.
+        Outer diameter of the pipe (m).
+    wall_thickness : float, array-like, mandatory.
+        Wall thickness of the pipe (m).
+    coating_thickness : float, array-like, optional
+        Coating wall thickness (m). Default is 0.
+    corrosion_allowance : float, array-like, optional
+        Corrosion allowance (m). Default is 0.
+    youngs_modulus : float, array-like, optional
+        Young's modulus of the material (Pa). Default is 0.
     """
     def __init__(
             self,
@@ -19,19 +47,6 @@ class Pipe: # pylint: disable=too-many-arguments
         ):
         """
         Initialize a Pipe object with geometric and material properties.
-
-        Parameters
-        ----------
-        outer_diameter : float, array-like
-            Outer diameter of the pipe (m).
-        wall_thickness : float, array-like
-            Wall thickness of the pipe (m).
-        coating_thickness : float, array-like, optional
-            Coating wall thickness (m). Default is 0.0.
-        corrosion_allowance : float, array-like, optional
-            Corrosion allowance (m). Default is 0.0.
-        youngs_modulus : float, array-like, optional
-            Young's modulus of the material (Pa). Default is None.
         """
         self.outer_diameter = np.asarray(outer_diameter, dtype = float)
         self.wall_thickness = np.asarray(wall_thickness, dtype = float)
@@ -48,16 +63,14 @@ class Pipe: # pylint: disable=too-many-arguments
         corroded_wall_thickness : np.ndarray
             Corroded wall thickness of the pipe.
 
-        See Also
-        --------
-        Pipe.wall_thickness
-        Pipe.corrosion_allowance
-
         Examples
         --------
         >>> wall_thickness = [0.0127, 0.0159]
         >>> corrosion_allowance = [0.003, 0.003]
-        >>> pipe = Pipe(wall_thickness=wall_thickness, corrosion_allowance=corrosion_allowance)
+        >>> pipe = Pipe(
+        ...     wall_thickness=wall_thickness,
+        ...     corrosion_allowance=corrosion_allowance
+        ... )
         >>> pipe.wall_thickness_corroded()
         array([0.0097, 0.0129])
         """
@@ -72,16 +85,14 @@ class Pipe: # pylint: disable=too-many-arguments
         inner_diameter : np.ndarray
             Inner diameter of the pipe.
 
-        See Also
-        --------
-        Pipe.outer_diameter
-        Pipe.wall_thickness
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness
+        ... )
         >>> pipe.inner_diameter()
         array([0.2477, 0.2921])
         """
@@ -96,15 +107,14 @@ class Pipe: # pylint: disable=too-many-arguments
         inner_area : np.ndarray
             Inner area of the pipe.
 
-        See Also
-        --------
-        Pipe.inner_diameter
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness
+        ... )
         >>> pipe.inner_area()
         array([0.04818833, 0.06701206])
         """
@@ -119,14 +129,12 @@ class Pipe: # pylint: disable=too-many-arguments
         outer_area : np.ndarray
             Outer area of the pipe.
 
-        See Also
-        --------
-        Pipe.outer_diameter
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
-        >>> pipe = Pipe(outer_diameter=outer_diameter)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter
+        ... )
         >>> pipe.outer_area()
         array([0.05857783, 0.08239707])
         """
@@ -141,16 +149,14 @@ class Pipe: # pylint: disable=too-many-arguments
         steel_area : np.ndarray
             Steel cross-sectional area.
 
-        See Also
-        --------
-        Pipe.outer_area
-        Pipe.inner_area
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness
+        ... )
         >>> pipe.steel_area()
         array([0.0103895 , 0.01538501])
         """
@@ -165,16 +171,14 @@ class Pipe: # pylint: disable=too-many-arguments
         total_outer_diameter : np.ndarray
             Total outer diameter of steel and coating.
 
-        See Also
-        --------
-        Pipe.outer_diameter
-        Pipe.coating_thickness
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> coating_thickness = [0.003, 0.003]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     coating_thickness=coating_thickness
+        ... )
         >>> pipe.total_outer_diameter()
         array([0.2791, 0.3299])
         """
@@ -189,15 +193,14 @@ class Pipe: # pylint: disable=too-many-arguments
         total_outer_area : np.ndarray
             Outer area of steel and coating.
 
-        See Also
-        --------
-        Pipe.total_outer_diameter
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> coating_thickness = [0.003, 0.003]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     coating_thickness=coating_thickness
+        ... )
         >>> pipe.total_outer_area()
         array([0.06118001, 0.08547803])
         """
@@ -212,16 +215,14 @@ class Pipe: # pylint: disable=too-many-arguments
         coating_area : np.ndarray
             Coating cross-sectional area.
 
-        See Also
-        --------
-        Pipe.total_outer_area
-        Pipe.outer_area
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> coating_thickness = [0.003, 0.003]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, coating_thickness=coating_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     coating_thickness=coating_thickness
+        ... )
         >>> pipe.coating_area()
         array([0.00260218, 0.00308096])
         """
@@ -236,17 +237,16 @@ class Pipe: # pylint: disable=too-many-arguments
         axial_stiffness : np.ndarray
             Axial stiffness of the pipe.
 
-        See Also
-        --------
-        Pipe.steel_area
-        Pipe.youngs_modulus
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
         >>> youngs_modulus = [207.0e+09, 207.0e+09]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness, youngs_modulus=youngs_modulus)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness,
+        ...     youngs_modulus=youngs_modulus
+        ... )
         >>> pipe.axial_stiffness()
         array([2.15062613e+09, 3.18469656e+09])
         """
@@ -261,16 +261,14 @@ class Pipe: # pylint: disable=too-many-arguments
         area_moment_inertia : np.ndarray
             Area moment inertia.
 
-        See Also
-        --------
-        Pipe.outer_diameter
-        Pipe.inner_diameter
-
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness
+        ... )
         >>> pipe.area_moment_inertia()
         array([8.82710601e-05, 1.82921605e-04])
         """
@@ -285,18 +283,18 @@ class Pipe: # pylint: disable=too-many-arguments
         bending_stiffness : np.ndarray
             Bending stiffness.
 
-        See Also
-        --------
-        Pipe.area_moment_inertia
-        Pipe.youngs_modulus
 
         Examples
         --------
         >>> outer_diameter = [0.2731, 0.3239]
         >>> wall_thickness = [0.0127, 0.0159]
         >>> youngs_modulus = [207.0e+09, 207.0e+09]
-        >>> pipe = Pipe(outer_diameter=outer_diameter, wall_thickness=wall_thickness, youngs_modulus=youngs_modulus)
+        >>> pipe = Pipe(
+        ...     outer_diameter=outer_diameter,
+        ...     wall_thickness=wall_thickness,
+        ...     youngs_modulus=youngs_modulus
+        ... )
         >>> pipe.bending_stiffness()
-        array([18272109.437121  , 37864772.21769765])
+        array([18272109.437121..., 37864772.21769765])
         """
         return self.youngs_modulus * self.area_moment_inertia()

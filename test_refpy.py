@@ -10,19 +10,19 @@ def run_doctests():
     Run doctests for the refpy classes
     '''
     result1 = doctest.testmod(
-        refpy.pipe_properties, verbose=False,
+        refpy.linepipe_tools, verbose=False,
         optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     )
     result2 = doctest.testmod(
-        refpy.dnv_limit_states, verbose=False,
+        refpy.dnv_tools, verbose=False,
         optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     )
     result3 = doctest.testmod(
-        refpy.lateral_buckling, verbose=False,
+        refpy.lateral_buckling_tools, verbose=False,
         optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     )
     result4 = doctest.testmod(
-        refpy.pipe_soil_interaction, verbose=False,
+        refpy.pipe_soil_interaction_tools, verbose=False,
         optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
     )
     total_attempted = (

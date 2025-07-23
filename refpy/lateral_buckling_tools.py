@@ -1,14 +1,38 @@
 '''
-Library of lateral buckling calculations
+This module provides classes and functions for lateral buckling calculations and friction factor
+distribution fitting for subsea pipelines.
+
+Features:
+ - The `LBDistributions` class implements lognormal distribution fitting for geotechnical friction
+   factors, supporting low, best, and high estimates (LE, BE, HE) and multiple fit types.
+ - Designed for use in pipeline lateral buckling reliability analysis and geotechnical parameter
+   estimation.
+ - All calculations are vectorized using NumPy and leverage SciPy for statistical fitting.
+
+.. raw:: html
+
+   <hr style="height:6px; background-color:#888; border:none; margin:1.5em 0;" />
+
 '''
 
 import numpy as np
 from scipy.stats import lognorm
 from scipy.optimize import minimize
 
-class LateralBuckling:
+class LBDistributions: # pylint: disable=too-many-instance-attributes, too-many-arguments
     """
     Class for lateral buckling calculations, including friction factor distribution fitting.
+
+    Parameters
+    ----------
+    friction_factor_le : float, optional
+        Low estimate (LE) friction factor, representing the 5th percentile.
+    friction_factor_be : float, optional
+        Best estimate (BE) friction factor, representing the 50th percentile.
+    friction_factor_he : float, optional
+        High estimate (HE) friction factor, representing the 95th percentile.
+    friction_factor_fit_type : str, optional
+        Type of fit to perform: 'LE_BE_HE', 'LE_BE', or 'BE_HE'.
     """
     def __init__(
             self,
@@ -20,17 +44,6 @@ class LateralBuckling:
         ):
         """
         Initialize with geotechnical friction factor estimates and fit type.
-
-        Parameters
-        ----------
-        friction_factor_le : float
-            Low estimate (LE) friction factor, representing the 5th percentile.
-        friction_factor_be : float
-            Best estimate (BE) friction factor, representing the 50th percentile.
-        friction_factor_he : float
-            High estimate (HE) friction factor, representing the 95th percentile.
-        friction_factor_fit_type : str
-            Type of fit to perform: 'LE_BE_HE', 'LE_BE', or 'BE_HE'.
         """
         self.friction_factor_le = np.asarray(friction_factor_le, dtype = float)
         self.friction_factor_be = np.asarray(friction_factor_be, dtype = float)
@@ -68,7 +81,7 @@ class LateralBuckling:
 
         Examples
         --------
-        >>> lb = LateralBuckling(
+        >>> lb = LBDistributions(
         ...     friction_factor_le=[0.5],
         ...     friction_factor_be=[1.0],
         ...     friction_factor_he=[1.5],
@@ -88,7 +101,13 @@ class LateralBuckling:
         rmse_list = []
 
         # Define the objective function
-        def objective(params, friction_factor_le, friction_factor_be, friction_factor_he, friction_factor_fit_type):
+        def objective(
+                params,
+                friction_factor_le,
+                friction_factor_be,
+                friction_factor_he,
+                friction_factor_fit_type
+            ):
             location_param, scale_param = params
             if friction_factor_fit_type == 'LE_BE_HE':
                 le_fit = lognorm(scale_param, 0.0, np.exp(location_param)).ppf(0.05)
@@ -115,14 +134,28 @@ class LateralBuckling:
             return error
 
         # Loop through the friction factor arrays
-        for i, (friction_factor_le, friction_factor_be, friction_factor_he, friction_factor_fit_type) in enumerate(
-            zip(self.friction_factor_le, self.friction_factor_be, self.friction_factor_he, self.friction_factor_fit_type)
+        for _, (
+            friction_factor_le,
+            friction_factor_be,
+            friction_factor_he,
+            friction_factor_fit_type
+        ) in enumerate(
+            zip(
+                self.friction_factor_le,
+                self.friction_factor_be,
+                self.friction_factor_he,
+                self.friction_factor_fit_type
+            )
         ):
             initial_location = np.mean(
-                [np.log(friction_factor_le), np.log(friction_factor_be), np.log(friction_factor_he)]
+                [np.log(friction_factor_le),
+                 np.log(friction_factor_be),
+                 np.log(friction_factor_he)]
             )
             initial_scale = np.std(
-                [np.log(friction_factor_le), np.log(friction_factor_be), np.log(friction_factor_he)],
+                [np.log(friction_factor_le),
+                 np.log(friction_factor_be),
+                 np.log(friction_factor_he)],
                 ddof=1
             )
             initial_guess = [initial_location, initial_scale]
@@ -131,7 +164,12 @@ class LateralBuckling:
             result = minimize(
                 objective,
                 initial_guess,
-                args=(friction_factor_le, friction_factor_be, friction_factor_he, friction_factor_fit_type),
+                args=(
+                    friction_factor_le,
+                    friction_factor_be,
+                    friction_factor_he,
+                    friction_factor_fit_type
+                ),
                 method='Nelder-Mead'
             )
             location_param, scale_param = result.x
@@ -183,4 +221,13 @@ class LateralBuckling:
         he_fit = np.array(he_fit_list)
         rmse = np.array(rmse_list)
 
-        return mean_friction, std_friction, location_param, scale_param, le_fit, be_fit, he_fit, rmse
+        return (
+            mean_friction,
+            std_friction,
+            location_param,
+            scale_param,
+            le_fit,
+            be_fit,
+            he_fit,
+            rmse
+        )

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath("../"))
 project = 'RefPy'
 copyright = '2025, Ismael Ripoll'
 author = 'Ismael Ripoll'
-release = 'v0.1.9'
+release = 'v0.1.12'
 
 extensions = ['sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.autosummary',
               'sphinx.ext.autodoc', 'sphinx.ext.napoleon']
@@ -27,8 +27,10 @@ html_static_path = ['_static']
 html_css_files = ['custom.css']
 
 html_sidebars = {
-    "**": ["sidebar-nav-bs", "search-field"]  # Show the sidebar and search field everywhere
+    "**": ["search-field", "sidebar-nav-bs"]  # Show the sidebar and search field everywhere
 }
+
+html_show_sourcelink = False
 
 autodoc_member_order = 'bysource'
 
@@ -46,7 +48,7 @@ html_theme_options = {
     ],
     "footer_start": ["copyright"],      # Footer customization
     "logo": {
-        "image_light": "_static/logo.png",
-        "image_dark": "_static/logo_dark.png",
-    },
+        "image_light": "_static/logo.svg",
+        "image_dark": "_static/logo_dark.svg",
+    }
 }
