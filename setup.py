@@ -22,3 +22,4 @@ setup(
         "Source": "https://github.com/refpy/refpy",
         "Tracker": "https://github.com/refpy/refpy/issues",
     }
+)
