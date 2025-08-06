@@ -787,8 +787,8 @@ FFT_CUTOFF_WAVELENGTH = 16  # Cutoff of smaller wavelengths in meters
 FFT_CUTOFF_WAVELENGTH_CURVATURE = 16  # Cutoff of smaller wavelengths in meters
 GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
 dfe2_1, dfe2_2, dfe2_3 = example2_data()
-example2_plot1(dfe2_1)
+# example2_plot1(dfe2_1)
 example2_plot2(dfe2_2)
-example2_plot3(dfe2_2, dfe2_3)
-example2_plot4(dfe2_2)
-example2_plot5(dfe2_2, dfe2_3)
+# example2_plot3(dfe2_2, dfe2_3)
+# example2_plot4(dfe2_2)
+# example2_plot5(dfe2_2, dfe2_3)

@@ -1812,7 +1812,7 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         np.ndarray
             Reconstructed y coordinates for each survey point.
         """
-        return
+        return self.y_recon
 
 class GaussianSmoother:
     """
