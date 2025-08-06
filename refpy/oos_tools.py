@@ -4,13 +4,15 @@ This module provides classes and functions for processing and analyzing Out-Of-S
 pipeline survey and route data.
 
 Features:
+ - Designed for use in subsea pipeline, but general enough for any OOS survey
+   data processing and analysis tasks.
  - The `OOSAnonymisation` class processes OOS survey and route data, providing methods for
    cleaning, sectioning, coordinate normalization, and anonymization of pipeline survey datasets.
- - The `OOSSmoother` class implements group-wise signal processing and smoothing (FFT, Gaussian,
-   etc.)
-   for OOS survey data, supporting robust, efficient, and reproducible analysis.
- - Designed for use in subsea pipeline and riser engineering, but general enough for any OOS survey
-   data processing and analysis tasks.
+ - The `OOSDespiker` class implements rolling window sigma-clipping despiking for OOS survey data,
+   removing outliers while preserving data alignment and group structure.
+ - The `FFTSmoother` and `GaussianSmoother` class implements group-wise signal processing and
+   smoothing (FFT, Gaussian, etc.) for OOS survey data, supporting robust, efficient, and
+   reproducible analysis.
 
 All calculations are vectorized using NumPy and SciPy for efficiency and flexibility.
 
@@ -23,6 +25,7 @@ import numpy as np
 from scipy.optimize import leastsq
 from scipy.fft import fft, ifft, fftfreq
 from scipy.signal import welch
+from scipy.ndimage import generic_filter
 
 class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals, too-few-public-methods
     """
@@ -235,14 +238,12 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         for i, section_type in enumerate(self.route_pipeline_section_type):
             if section_type in feature_types:
                 dev = self.route_development[i]
-                survey = self.survey_type[i]
                 group = self.route_pipeline_group[i]
                 pipe = self.route_pipeline[i]
                 kp = self.route_kp_from[i]
                 # Find matching survey points
                 mask = (
                     (self.survey_development == dev) &
-                    (self.survey_type == survey) &
                     (self.survey_pipeline_group == group) &
                     (self.survey_pipeline == pipe)
                 )
@@ -251,7 +252,9 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                 kp_survey = self.survey_kp[mask]
                 idx_in_mask = np.argmin(np.abs(kp_survey - kp))
                 idx = np.where(mask)[0][idx_in_mask]
-                self.survey_feature[idx] = section_type
+                # Only assign if not last index, or if kp matches exactly
+                if idx_in_mask != len(kp_survey) - 1 or np.isclose(kp, kp_survey[idx_in_mask]):
+                    self.survey_feature[idx] = section_type
 
     def _add_design_route_curve_radius(self):
         """
@@ -705,13 +708,17 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             y = self.survey_group_section_northing_mod[idx]
 
             # Compute angle to rotate so last point is on the x-axis
-            dx = x[-1]
-            dy = y[-1]
+            dx = x[-2] - x[1]
+            dy = y[-2] - y[1]
             theta = -np.arctan2(dy, dx)
 
+            # Shift so the second point is at the origin
+            x_shift = x - x[1]
+            y_shift = y - y[1]
+
             # Rotate all points
-            x_aligned = x * np.cos(theta) - y * np.sin(theta)
-            y_aligned = x * np.sin(theta) + y * np.cos(theta)
+            x_aligned = x_shift * np.cos(theta) - y_shift * np.sin(theta) + x[1]
+            y_aligned = x_shift * np.sin(theta) + y_shift * np.cos(theta)
 
             # Store the aligned coordinates back
             self.survey_group_section_easting_mod[idx] = x_aligned
@@ -726,9 +733,296 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                     -self.survey_group_section_northing_mod[idx]
                 )
 
-class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
-    Class to perform FFT filtering and spectral analysis on 1D signals, grouped by
+    Rolling window sigma-clipping despiking for grouped pipeline survey data.
+
+    This class identifies and removes outlier values from survey data using a rolling window
+    sigma-clipping algorithm, applied group-wise. Outliers are replaced with NaN, preserving
+    the original data alignment and group structure.
+
+    Parameters
+    ----------
+    development : array-like
+        Development identifier for each survey point.
+    survey_type : array-like
+        Survey type for each survey point.
+    pipeline_group : array-like
+        Pipeline group for each survey point.
+    group_section_type : array-like
+        Group section type for each survey point.
+    x : array-like
+        Modified eastings for each survey point.
+    y : array-like
+        Signal values (i.e., northings) for each survey point.
+    window : int, optional
+        Size of the rolling window for sigma-clipping (default: 11).
+    sigma : float, optional
+        Sigma threshold for outlier detection (default: 3.0).
+    """
+    def __init__(
+            self,
+            *,
+            development,
+            survey_type,
+            pipeline_group,
+            group_section_type,
+            y,
+            window=11,
+            sigma=3.0
+        ):
+        """
+        Initialize an OOSAnonymisation object with route and survey data.
+        """
+        # Convert to arrays
+        self.development = np.asarray(development, dtype=object)
+        self.survey_type = np.asarray(survey_type, dtype=object)
+        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        self.y = np.asarray(y)
+        self.window = window
+        self.sigma = sigma
+        # Initialize group-related attributes
+        self.group_tuples = list(zip(
+            self.development,
+            self.survey_type,
+            self.pipeline_group,
+            self.group_section_type,
+        ))
+        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
+        # Initialize attributes
+        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
+
+    def process(self):
+        """
+        Despike outliers in self.y using a rolling window sigma-clipping algorithm.
+        Outliers are replaced with NaN.
+
+        Parameters
+        ----------
+        window : int, optional
+            Size of the rolling window (must be odd). Default is 11.
+        sigma : float, optional
+            Sigma threshold for clipping. Default is 3.0.
+        """
+        def sigma_clip_filter(values):
+            center = values[len(values) // 2]
+            win_mean = np.nanmean(values)
+            win_std = np.nanstd(values)
+            if win_std == 0 or np.isnan(win_std):
+                return center
+            if abs(center - win_mean) > self.sigma * win_std:
+                return np.nan
+            return center
+
+        # Create a copy of the original y values
+        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
+
+        for group in self.unique_groups:
+
+            # Create mask for current group
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+
+            # Get indices and values for the current group
+            idx = np.where(mask)[0]
+            y_g = self.y[idx]
+            if len(y_g) < self.window:
+                self.y_despike[idx] = y_g
+                continue
+
+            # Apply sigma clipping filter using a rolling window
+            y_g_despiked = generic_filter(
+                y_g, sigma_clip_filter, size=self.window, mode='nearest'
+            )
+            self.y_despike[idx] = y_g_despiked
+
+class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+    """
+    Computes geometric curvature, arc length, and tangent angle for grouped pipeline survey data.
+
+    This class calculates the arc length, tangent angle, and curvature of the pipeline defined by
+    easting and northing coordinates, for each group section. The results are aligned with the
+    original data and are useful for geometric analysis and further signal processing.
+
+    Parameters
+    ----------
+    development : array-like
+        Development identifier for each survey point.
+    survey_type : array-like
+        Survey type for each survey point.
+    pipeline_group : array-like
+        Pipeline group for each survey point.
+    group_section_type : array-like
+        Group section type for each survey point.
+    x : array-like
+        Modified eastings or arc length for each survey point.
+    y : array-like
+        Modified northings for each survey point.
+    """
+    def __init__(
+            self,
+            *,
+            development,
+            survey_type,
+            pipeline_group,
+            group_section_type,
+            x,
+            y
+        ):
+        """
+        Initialize an OOSAnonymisation object with route and survey data.
+        """
+        # Convert to arrays
+        self.development = np.asarray(development, dtype=object)
+        self.survey_type = np.asarray(survey_type, dtype=object)
+        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
+        # Initialize group-related attributes
+        self.group_tuples = list(zip(
+            self.development,
+            self.survey_type,
+            self.pipeline_group,
+            self.group_section_type,
+        ))
+        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
+        # Initialize attributes
+        self.arc_length = np.full(self.x.shape[0], np.nan, dtype=float)
+        self.angle = np.full(self.x.shape[0], np.nan, dtype=float)
+        self.curvature = np.full(self.x.shape[0], np.nan, dtype=float)
+
+    def process(self):
+        """
+        Calculate the arc length, angle and curvature of the pipeline defined by easting and
+        northing coordinates, for each group section. The result is aligned with the original
+        data. Central differences are used within the central points, and forward and backward
+        differences are used at the first and last point of each group.
+
+        It also calculates the arc length and angle.
+        """
+        # Re-initialise arc length and curvature array
+        self.arc_length = np.full(self.x.shape[0], np.nan, dtype=float)
+        self.angle = np.full(self.x.shape[0], np.nan, dtype=float)
+        self.curvature = np.full(self.x.shape[0], np.nan, dtype=float)
+        # Create group tuples
+        group_tuples = list(zip(
+            self.development,
+            self.survey_type,
+            self.pipeline_group,
+            self.group_section_type
+        ))
+        unique_groups = set(group_tuples)
+        # Iterate over each unique group
+        for group in unique_groups:
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+            idx = np.where(mask)[0]
+            # Coordinate vector
+            if len(idx) < 3:
+                continue  # Not enough points to compute curvature
+            x = self.x[idx]
+            y = self.y[idx]
+            coords = np.column_stack((x ,y))
+
+            # Remove consecutive duplicate points
+            diffs = np.diff(coords, axis=0)
+            nonzero = np.any(diffs != 0, axis=1)
+            keep = np.insert(nonzero, 0, True)  # Always keep the first point
+
+            coords_dedup = coords[keep]
+            x_dedup = coords_dedup[:, 0]
+            n = len(x_dedup)
+
+            curvature_full_dedup = np.full(n, np.nan, dtype=float)
+            angle_full_dedup = np.full(n, np.nan, dtype=float)
+            arc_length_full_dedup = np.full(n, np.nan, dtype=float)
+
+            if n < 3:
+                # Not enough points after deduplication
+                curvature_full = np.full(len(idx), np.nan, dtype=float)
+                angle_full = np.full(len(idx), np.nan, dtype=float)
+                arc_length_full = np.full(len(idx), np.nan, dtype=float)
+                self.arc_length[idx] = arc_length_full
+                self.angle[idx] = angle_full
+                self.curvature[idx] = curvature_full
+                continue
+
+            # Forward difference for the first point
+            v1_f = coords_dedup[1] - coords_dedup[0]
+            v2_f = coords_dedup[2] - coords_dedup[1]
+            norm_v1_f = np.linalg.norm(v1_f)
+            norm_v2_f = np.linalg.norm(v2_f)
+            ds_f = norm_v1_f
+            tan1_f = v1_f / norm_v1_f if norm_v1_f != 0 else np.zeros_like(v1_f)
+            tan2_f = v2_f / norm_v2_f if norm_v2_f != 0 else np.zeros_like(v2_f)
+            cross_f = tan1_f[0] * tan2_f[1] - tan1_f[1] * tan2_f[0]
+            arc_length_full_dedup[0] = ds_f
+            angle_full_dedup[0] = np.arctan2(v1_f[1], v1_f[0])
+            curvature_full_dedup[0] = cross_f / ds_f if ds_f != 0 else 0.0
+
+            # Central differences for internal points
+            p_prev = coords_dedup[:-2]
+            p_curr = coords_dedup[1:-1]
+            p_next = coords_dedup[2:]
+            v1 = p_curr - p_prev
+            v2 = p_next - p_curr
+            norm_v1 = np.linalg.norm(v1, axis=1)
+            norm_v2 = np.linalg.norm(v2, axis=1)
+            with np.errstate(divide='ignore', invalid='ignore'):
+                tan1 = np.divide(v1, norm_v1[:, None],
+                                 out=np.zeros_like(v1), where=norm_v1[:, None] != 0)
+                tan2 = np.divide(v2, norm_v2[:, None],
+                                 out=np.zeros_like(v2), where=norm_v2[:, None] != 0)
+                ds = 0.5 * (norm_v1 + norm_v2)
+                cross = tan1[:, 0] * tan2[:, 1] - tan1[:, 1] * tan2[:, 0]
+                curvature = np.divide(cross, ds, out=np.zeros_like(cross), where=ds != 0)
+            arc_length_full_dedup[1:-1] = ds
+            angle_full_dedup[1:-1] = np.arctan2(v2[:, 1], v2[:, 0])
+            curvature_full_dedup[1:-1] = curvature
+
+            # Backward difference for the last point
+            v1_b = coords_dedup[-2] - coords_dedup[-3]
+            v2_b = coords_dedup[-1] - coords_dedup[-2]
+            norm_v1_b = np.linalg.norm(v1_b)
+            norm_v2_b = np.linalg.norm(v2_b)
+            ds_b = norm_v2_b
+            tan1_b = v1_b / norm_v1_b if norm_v1_b != 0 else np.zeros_like(v1_b)
+            tan2_b = v2_b / norm_v2_b if norm_v2_b != 0 else np.zeros_like(v2_b)
+            cross_b = tan1_b[0] * tan2_b[1] - tan1_b[1] * tan2_b[0]
+            arc_length_full_dedup[-1] = ds_b
+            angle_full_dedup[-1] = np.arctan2(v2_b[1], v2_b[0])
+            curvature_full_dedup[-1] = cross_b / ds_b if ds_b != 0 else 0.0
+
+            # Cumulative arc length
+            arc_length_cumsum = np.cumsum(arc_length_full_dedup)
+
+            # Map de-duplicated results back to original indices
+            curvature_full = np.full(len(idx), np.nan, dtype=float)
+            angle_full = np.full(len(idx), np.nan, dtype=float)
+            arc_length_full = np.full(len(idx), np.nan, dtype=float)
+            orig_idx_dedup = np.where(keep)[0]
+            curvature_full[orig_idx_dedup] = curvature_full_dedup
+            angle_full[orig_idx_dedup] = angle_full_dedup
+            arc_length_full[orig_idx_dedup] = arc_length_cumsum
+
+            # Update survey group attributes
+            self.arc_length[idx] = arc_length_full
+            self.angle[idx] = angle_full
+            self.curvature[idx] = curvature_full
+
+class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
+    """
+    Class to perform FFT smoothing and spectral analysis on the pipeline survey data, grouped by
     (development, survey type, pipeline group, group section type).
     
     Parameters
@@ -741,53 +1035,12 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         Pipeline group for each point.
     group_section_type : array_like, mandatory
         Group section type for each point.
-    group_section_number : array_like, mandatory
-        Group section number for each point.
     x : array_like, mandatory
-        The x-coordinates (e.g., distance or KP) for all points.
+        The modified eastings or accumulated arc length for all points.
     y : array_like, mandatory
-        The y-values (signal) for all points.
-    fft_cutoff_wl : float or None, mandatory
-        Wavelength cutoff for FFT filtering. If None, no filtering is applied.
-    gaussian_bandwidth : float, mandatory
-        Bandwidth for Gaussian filtering. Default is 4.0.
-
-    Attributes
-    ----------
-    y_smooth : np.ndarray
-        Array of filtered y-values, aligned with input y (NaN for points not in a group).
-    freqs : np.ndarray
-        Array of frequency values, aligned with input y (NaN for points not in a group).
-    fft : np.ndarray
-        Array of filtered FFT values, aligned with input y (NaN for points not in a group).
-    freqs_raw : np.ndarray
-        Array of raw (unfiltered) frequency values, aligned with input y
-        (NaN for points not in a group).
-    fft_raw : np.ndarray
-        Array of raw (unfiltered) FFT values, aligned with input y
-        (NaN for points not in a group).
-    psd_development : list of np.ndarray
-        For each group, an array filled with the development value,
-        same length as the PSD frequency array (set by fft_welch).
-    psd_survey_type : list of np.ndarray
-        For each group, an array filled with the survey type value,
-        same length as the PSD frequency array (set by fft_welch).
-    psd_survey_number : list of np.ndarray
-        For each group, an array filled with the survey number,
-        same length as the PSD frequency array (set by fft_welch).
-    psd_pipeline_group : list of np.ndarray
-        For each group, an array filled with the pipeline group value,
-        same length as the PSD frequency array (set by fft_welch).
-    psd_group_section_type : list of np.ndarray
-        For each group, an array filled with the group section type value,
-        same length as the PSD frequency array (set by fft_welch).
-    psd_freqs : list of np.ndarray
-        List of frequency arrays for each group (set by fft_welch).
-    psd_vals : list of np.ndarray
-        List of PSD arrays for each group (set by fft_welch).
-    y_smooth_gaussian : np.ndarray
-        Array of filtered y-values using the gaussian filter,
-        aligned with input y (NaN for points not in a group).
+        The modified northings or curvilinear curvature (signal) for all points.
+    cutoff : float or None, mandatory
+        Wavelength or curvature cutoff for FFT filtering. If None, no filtering is applied.
     """
     def __init__(
             self,
@@ -796,11 +1049,9 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             survey_type,
             pipeline_group,
             group_section_type,
-            group_section_number,
             x,
             y,
-            fft_cutoff_wl,
-            gaussian_bandwidth
+            cutoff
         ):
         """
         Initialize an OOSAnonymisation object with route and survey data.
@@ -810,10 +1061,9 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         self.survey_type = np.asarray(survey_type, dtype=object)
         self.pipeline_group = np.asarray(pipeline_group, dtype=object)
         self.group_section_type = np.asarray(group_section_type, dtype=object)
-        self.group_section_number = np.asarray(group_section_number, dtype=float)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
-        # Prepare fft_filter attributes
+        # Initialize group-related attributes
         self.group_tuples = list(zip(
             self.development,
             self.survey_type,
@@ -821,9 +1071,9 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.group_section_type,
         ))
         self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
-        self.fft_cutoff_wl = fft_cutoff_wl
-        self.gaussian_bandwidth = gaussian_bandwidth
+        self.cutoff = cutoff
         # Initialize attributes
+        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
         self.y_smooth = np.full_like(self.y, np.nan, dtype=float)
         self.freqs = np.full_like(self.y, np.nan, dtype=float)
         self.fft = np.full_like(self.y, np.nan, dtype=complex)
@@ -836,10 +1086,11 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         self.psd_group_section_type = []
         self.psd_freqs = []
         self.psd_vals = []
-        # Prepare gaussian attributes
-        self.y_smooth_gaussian = np.full_like(self.y, np.nan, dtype=float)
+        # Reconstruction arrays
+        self.x_recon = np.full_like(self.x, np.nan, dtype=float)
+        self.y_recon = np.full_like(self.x, np.nan, dtype=float)
 
-    def fft_filter(self):
+    def filter(self):
         """
         Apply FFT low-pass filtering to each group, deduplicating (x_g, y_g) pairs within a group
         before filtering.
@@ -866,26 +1117,37 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         fft_raw : ndarray
             Array of raw (unfiltered) FFT values, aligned with input y
             (NaN for points not in a group).
-
-        Returns
-        -------
-        None
         """
         for group in self.unique_groups:
+
+            # Get the mask for the current group
             mask = (
                 (self.development == group[0]) &
                 (self.survey_type == group[1]) &
                 (self.pipeline_group == group[2]) &
                 (self.group_section_type == group[3])
             )
+
+            # Get the data for the current group
             x_g = self.x[mask]
             y_g = self.y[mask]
+
             # Deduplicate (x_g, y_g) pairs
             pairs = np.column_stack((x_g, y_g))
-            _, unique_idx, inverse_idx = np.unique(pairs, axis=0,
-                                                   return_index=True, return_inverse=True)
-            x_g_unique = x_g[unique_idx]
-            y_g_unique = y_g[unique_idx]
+
+            # Discard rows with NaN in either column
+            not_nan_mask = ~np.isnan(pairs).any(axis=1)
+            pairs_clean = pairs[not_nan_mask]
+            x_g_clean = x_g[not_nan_mask]
+            y_g_clean = y_g[not_nan_mask]
+            if len(x_g_clean) == 0:
+                continue
+            _, unique_idx, inverse_idx = np.unique(
+                pairs_clean, axis=0, return_index=True, return_inverse=True
+            )
+            x_g_unique = x_g_clean[unique_idx]
+            y_g_unique = y_g_clean[unique_idx]
+
             # FFT filtering on unique pairs
             if len(x_g_unique) < 2:
                 # Not enough points to filter
@@ -896,22 +1158,23 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             else:
                 dx_g = np.mean(np.diff(x_g_unique))
                 if dx_g == 0:
-                    fs_g = np.nan
                     continue
-                else:
-                    fs_g = 1 / dx_g
+                fs_g = 1 / dx_g
                 fft_vals_g = fft(y_g_unique)
                 freqs_g = fftfreq(len(x_g_unique), 1 / fs_g)
                 fft_g = np.copy(fft_vals_g)
-                if self.fft_cutoff_wl is not None:
-                    fft_g[np.abs(freqs_g) > 1 / self.fft_cutoff_wl] = 0
+                if self.cutoff is not None:
+                    fft_g[np.abs(freqs_g) > (1 / self.cutoff)] = 0
                 y_smooth_unique = np.real(ifft(fft_g))
+
             # Map smoothed values back to all original indices
-            y_smooth_g = y_smooth_unique[inverse_idx]
+            y_smooth_g = np.full_like(y_g, np.nan, dtype=float)
+            y_smooth_g[not_nan_mask] = y_smooth_unique[inverse_idx]
             freqs_g_full = np.full_like(x_g, np.nan, dtype=float)
             fft_g_full = np.full_like(x_g, np.nan, dtype=complex)
             fft_raw_full = np.full_like(x_g, np.nan, dtype=complex)
             freqs_raw_full = np.full_like(x_g, np.nan, dtype=float)
+
             # For each original index, assign the frequency and fft value from the unique pair
             for i, idx in enumerate(inverse_idx):
                 if len(freqs_g) > idx:
@@ -919,6 +1182,7 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                     fft_g_full[i] = fft_g[idx]
                     freqs_raw_full[i] = freqs_g[idx]
                     fft_raw_full[i] = fft_vals_g[idx]
+
             # Assign values
             self.y_smooth[mask] = y_smooth_g
             self.freqs[mask] = freqs_g_full
@@ -926,7 +1190,7 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.freqs_raw[mask] = freqs_raw_full
             self.fft_raw[mask] = fft_raw_full
 
-    def fft_welch(self, nperseg=256):
+    def welch(self, nperseg=256):
         """
         Compute the Power Spectral Density (PSD) using Welch's method for each group.
 
@@ -955,28 +1219,42 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             List of frequency arrays for each group.
         psd_vals : list of ndarray
             List of PSD arrays for each group.
-
-        Returns
-        -------
-        None
         """
         for group in self.unique_groups:
+
+            # Get the mask for the current group
             mask = (
                 (self.development == group[0]) &
                 (self.survey_type == group[1]) &
                 (self.pipeline_group == group[2]) &
                 (self.group_section_type == group[3])
             )
+            # Get the data for the current group
             x_g = self.x[mask]
             y_g = self.y[mask]
             if len(x_g) < 2 or len(y_g) < 2:
                 continue
-            dx_g = np.mean(np.diff(x_g))
-            if dx_g == 0:
+
+            # Remove NaN values
+            x_g_valid = x_g[~np.isnan(x_g)]
+            y_g_valid = y_g[~np.isnan(y_g)]
+
+            # Only keep indices where both x_g and y_g are valid (not NaN)
+            valid_mask = ~np.isnan(x_g) & ~np.isnan(y_g)
+            x_g_valid = x_g[valid_mask]
+            y_g_valid = y_g[valid_mask]
+            if len(x_g_valid) < 2 or len(y_g_valid) < 2:
+                continue
+            dx_g = np.mean(np.diff(x_g_valid))
+            if dx_g == 0 or np.isnan(dx_g):
                 continue
             fs_g = 1 / dx_g
-            nperseg_eff = min(nperseg, len(y_g))
-            f_welch, pxx_welch = welch(y_g, fs=fs_g, nperseg=nperseg_eff)
+
+            # Compute Welch's method
+            nperseg_eff = min(nperseg, len(y_g_valid))
+            f_welch, pxx_welch = welch(y_g_valid, fs=fs_g, nperseg=nperseg_eff)
+
+            # Store the results
             self.psd_development.append(group[0])
             self.psd_survey_type.append(group[1])
             self.psd_pipeline_group.append(group[2])
@@ -984,29 +1262,131 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.psd_freqs.append(f_welch)
             self.psd_vals.append(pxx_welch)
 
-    def gaussian_filter(self):
+    def reconstruct_coordinates_from_curvature(self):
         """
-        Apply Gaussian kernel smoothing to each group, using gaussian_bandwidth.
-
-        The smoothing is performed group-wise, using the same grouping as fft_filter.
-        The result is stored in self.y_smooth_gaussian, aligned with input y.
-
-        Sets
-        ----
-        y_smooth_gaussian : ndarray
-            Array of smoothed y-values, aligned with input y (NaN for points not in a group).
+        Reconstruct eastings and northings from arc length and smoothed curvature for each group.
+        The result is aligned with self.x and self.y_smooth.
+        Sets:
+            self.x_recon : ndarray
+                Reconstructed eastings (aligned with self.x, NaN for points not in a group)
+            self.y_recon : ndarray
+                Reconstructed northings (aligned with self.x, NaN for points not in a group)
         """
-        std = 0.37
-        b_scaled = self.gaussian_bandwidth / std
         for group in self.unique_groups:
+
+            # Get the mask for the current group
             mask = (
                 (self.development == group[0]) &
                 (self.survey_type == group[1]) &
                 (self.pipeline_group == group[2]) &
                 (self.group_section_type == group[3])
             )
+
+            # Get the arc length and curvature
+            s = self.x[mask]
+            kappa = self.y_smooth[mask]
+
+            # Remove NaN from arc length and curvature
+            valid = ~np.isnan(s) & ~np.isnan(kappa)
+            if np.sum(valid) < 2:
+                continue
+            s = s[valid]
+            kappa = kappa[valid]
+
+            # Ensure s is sorted
+            idx_sort = np.argsort(s)
+            s = s[idx_sort]
+            ds = np.diff(s, prepend=s[0])
+            kappa = kappa[idx_sort]
+
+            # Shift the position of ds and kappa +1 position for dataframe alignment purposes
+            ds_angle = np.roll(ds, 1)
+            ds_angle[0] = 0.0
+            kappa[0] = 0.0
+            kappa = np.roll(kappa, 1)
+            kappa[0] = 0.0
+
+            # Integrate curvature to get tangent angle
+            theta = np.cumsum(kappa * ds_angle)
+
+            # Integrate cos(theta), sin(theta) to get coordinates
+            x_rec = np.cumsum(np.cos(theta) * ds)
+            y_rec = np.cumsum(np.sin(theta) * ds)
+
+            # Align so the line from the second point to the one before last is horizontal
+            dx = x_rec[-2] - x_rec[1]
+            dy = y_rec[-2] - y_rec[1]
+            angle = -np.arctan2(dy, dx)
+            cos_a = np.cos(angle)
+            sin_a = np.sin(angle)
+            x_rot = (x_rec - x_rec[1]) * cos_a - (y_rec - y_rec[1]) * sin_a + x_rec[1]
+            y_rot = (x_rec - x_rec[1]) * sin_a + (y_rec - y_rec[1]) * cos_a
+
+            # Place back into full arrays
+            group_indices = np.where(mask)[0][valid][idx_sort]
+            self.x_recon[group_indices] = x_rot
+            self.y_recon[group_indices] = y_rot
+
+class GaussianSmoother:
+    """
+    Class to perform Gaussian kernel smoothing on the pipeline survey, grouped by
+    (development, survey type, pipeline group, group section type).
+    """
+    def __init__(
+        self,
+        *,
+        development,
+        survey_type,
+        pipeline_group,
+        group_section_type,
+        x,
+        y,
+        bandwidth
+    ):
+        # Initialize GaussianSmoother attributes
+        self.development = np.asarray(development, dtype=object)
+        self.survey_type = np.asarray(survey_type, dtype=object)
+        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
+        self.bandwidth = bandwidth
+        # Initialize group-related attributes
+        self.group_tuples = list(zip(
+            self.development,
+            self.survey_type,
+            self.pipeline_group,
+            self.group_section_type,
+        ))
+        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
+        self.y_smooth = np.full_like(self.y, np.nan, dtype=float)
+
+    def process(self):
+        """
+        Apply Gaussian kernel smoothing to each group, using bandwidth.
+
+        The smoothing is performed group-wise, using the same grouping as fft_filter.
+        The result is stored in self.y_smooth, aligned with input y.
+        """
+        # Compute Gaussian kernel
+        std = 0.37
+        b_scaled = self.bandwidth / std
+
+        for group in self.unique_groups:
+
+            # Create mask for current group
+            mask = (
+                (self.development == group[0]) &
+                (self.survey_type == group[1]) &
+                (self.pipeline_group == group[2]) &
+                (self.group_section_type == group[3])
+            )
+
+            # Extract group data
             x_g = self.x[mask]
             y_g = self.y[mask]
+
+            # Initialize smoothed output
             y_smooth_g = np.empty_like(y_g, dtype=float)
             for i in range(x_g.size):
                 x_left = max(x_g[0], x_g[i] - 2 * b_scaled)
@@ -1015,8 +1395,8 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                 xgk = x_g[idx]
                 ygk = y_g[idx]
                 weight = (
-                    1 / ((2 * np.pi) ** 0.5 * std)* np.exp(
-                        -0.5 * (np.abs(xgk - x_g[i]) / b_scaled / std) ** 2)
+                    1 / ((2 * np.pi)**0.5 * std) *
+                    np.exp(-0.5 * (np.abs(xgk - x_g[i]) / b_scaled / std)**2)
                 )
                 sumygk = np.dot(weight, ygk)
                 sumweight = np.sum(weight)
@@ -1026,4 +1406,4 @@ class OOSSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                     y_smooth_g[i] = ygk[0]
                 else:
                     y_smooth_g[i] = np.nan  # or 0, or skip, depending on your needs
-            self.y_smooth_gaussian[mask] = y_smooth_g
+            self.y_smooth[mask] = y_smooth_g
