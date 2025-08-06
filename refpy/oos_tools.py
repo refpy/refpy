@@ -3,16 +3,17 @@
 This module provides classes and functions for processing and analyzing Out-Of-Straightness (OOS)
 pipeline survey and route data.
 
-Features:
- - Designed for use in subsea pipeline, but general enough for any OOS survey
-   data processing and analysis tasks.
- - The `OOSAnonymisation` class processes OOS survey and route data, providing methods for
-   cleaning, sectioning, coordinate normalization, and anonymization of pipeline survey datasets.
- - The `OOSDespiker` class implements rolling window sigma-clipping despiking for OOS survey data,
-   removing outliers while preserving data alignment and group structure.
- - The `FFTSmoother` and `GaussianSmoother` class implements group-wise signal processing and
-   smoothing (FFT, Gaussian, etc.) for OOS survey data, supporting robust, efficient, and
-   reproducible analysis.
+**Features:**
+
+- Designed for use in subsea pipeline, but general enough for any OOS survey
+  data processing and analysis tasks.
+- The `OOSAnonymisation` class processes OOS survey and route data, providing methods for
+  cleaning, sectioning, coordinate normalization, and anonymization of pipeline survey datasets.
+- The `OOSDespiker` class implements rolling window sigma-clipping despiking for OOS survey data,
+  removing outliers while preserving data alignment and group structure.
+- The `FFTSmoother` and `GaussianSmoother` class implements group-wise signal processing and
+  smoothing (FFT, Gaussian, etc.) for OOS survey data, supporting robust, efficient, and
+  reproducible analysis.
 
 All calculations are vectorized using NumPy and SciPy for efficiency and flexibility.
 
@@ -31,43 +32,40 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
     """
     Processor for Out-Of-Straightness (OOS) pipeline survey and route data.
     Provides methods for cleaning, sectioning, and coordinate normalization.
+    All input arrays (parameters) are converted to NumPy arrays and stored as
+    attributes. Additional attributes are initialized as NumPy arrays and will
+    be populated by processing methods.
 
     Parameters
     ----------
-    route_development : array-like, mandatory
+    route_development : np.ndarray
         Development identifiers for each route section.
-    route_pipeline_group : array-like, mandatory
+    route_pipeline_group : np.ndarray
         Pipeline group identifiers for each route section.
-    route_pipeline : array-like, mandatory
+    route_pipeline : np.ndarray
         Pipeline identifiers for each route section.
-    route_kp_from : array-like, mandatory
+    route_kp_from : np.ndarray
         Start KP (kilometer point) for each route section.
-    route_kp_to : array-like, mandatory
+    route_kp_to : np.ndarray
         End KP (kilometer point) for each route section.
-    route_pipeline_section_type : array-like, mandatory
+    route_pipeline_section_type : np.ndarray
         Section type (e.g., 'Straight', 'Curve', etc.) for each route section.
-    route_curve_radius : array-like, mandatory
+    route_curve_radius : np.ndarray
         Design curve radius for each route section.
-    survey_development : array-like, mandatory
+    survey_development : np.ndarray
         Development identifiers for each survey point.
-    survey_type : array-like, mandatory
+    survey_type : np.ndarray
         Survey type for each survey point.
-    survey_pipeline_group : array-like, mandatory
+    survey_pipeline_group : np.ndarray
         Pipeline group identifiers for each survey point.
-    survey_pipeline : array-like, mandatory
+    survey_pipeline : np.ndarray
         Pipeline identifiers for each survey point.
-    survey_kp : array-like, mandatory
+    survey_kp : np.ndarray
         KP (kilometer point) for each survey point.
-    survey_easting : array-like, mandatory
+    survey_easting : np.ndarray
         Easting coordinate for each survey point.
-    survey_northing : array-like, mandatory
+    survey_northing : np.ndarray
         Northing coordinate for each survey point.
-
-    Notes
-    -----
-    All input arrays are converted to NumPy arrays and stored as attributes. Additional
-    attributes for section types, numbers, radii, and modified coordinates are
-    initialized as NumPy arrays and will be populated by processing methods.
     """
     def __init__(
             self,
@@ -85,11 +83,12 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
             survey_pipeline,
             survey_kp,
             survey_easting,
-            survey_northing,
+            survey_northing
         ):
         """
         Initialize an OOSAnonymisation object with route and survey data.
         """
+        # Initialise parameter arrays for the route data
         self.route_development = np.asarray(route_development, dtype=object)
         self.route_pipeline_group = np.asarray(route_pipeline_group, dtype=object)
         self.route_pipeline = np.asarray(route_pipeline, dtype=object)
@@ -97,6 +96,7 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         self.route_kp_to = np.asarray(route_kp_to, dtype=float)
         self.route_pipeline_section_type = np.asarray(route_pipeline_section_type, dtype=object)
         self.route_curve_radius = np.asarray(route_curve_radius, dtype=float)
+        # Initialise parameter arrays for the survey data
         self.survey_development = np.asarray(survey_development, dtype=object)
         self.survey_type = np.asarray(survey_type, dtype=object)
         self.survey_pipeline_group = np.asarray(survey_pipeline_group, dtype=object)
@@ -104,10 +104,20 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         self.survey_kp = np.asarray(survey_kp, dtype=float)
         self.survey_easting = np.asarray(survey_easting, dtype=float)
         self.survey_northing = np.asarray(survey_northing, dtype=float)
+        # Initialise returns arrays for the survey data, section grouped
         self.survey_section_type = np.full(
             self.survey_kp.shape[0], '', dtype=object
         )
         self.survey_section_no = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_section_kp_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_section_easting_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
+        self.survey_section_northing_mod = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
         self.survey_feature = np.full(
@@ -119,28 +129,20 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
         self.survey_actual_route_curve_radius = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
-        self.survey_section_easting_mod = np.full(
-            self.survey_kp.shape[0], np.nan, dtype=float
-        )
-        self.survey_section_northing_mod = np.full(
-            self.survey_kp.shape[0], np.nan, dtype=float
-        )
-        self.survey_section_kp_mod = np.full(
-            self.survey_kp.shape[0], np.nan, dtype=float
-        )
+        # Initialise returns arrays for the survey data, pipeline group grouped
         self.survey_group_section_no = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
         self.survey_group_section_type = np.full(
             self.survey_kp.shape[0], '', dtype=object
         )
+        self.survey_group_section_kp_mod = np.full(
+            self.survey_kp.shape[0], np.nan, dtype=float
+        )
         self.survey_group_section_easting_mod = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
         self.survey_group_section_northing_mod = np.full(
-            self.survey_kp.shape[0], np.nan, dtype=float
-        )
-        self.survey_group_section_kp_mod = np.full(
             self.survey_kp.shape[0], np.nan, dtype=float
         )
 
@@ -733,13 +735,308 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
                     -self.survey_group_section_northing_mod[idx]
                 )
 
+    def get_route_development(self):
+        """
+        Get development identifiers for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Development identifiers for each route section.
+        """
+        return self.route_development
+
+    def get_route_pipeline_group(self):
+        """
+        Get pipeline group identifiers for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Pipeline group identifiers for each route section.
+        """
+        return self.route_pipeline_group
+
+    def get_route_pipeline(self):
+        """
+        Get pipeline identifiers for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Pipeline identifiers for each route section.
+        """
+        return self.route_pipeline
+
+    def get_route_kp_from(self):
+        """
+        Get start KP (kilometer point) for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Start KP (kilometer point) for each route section.
+        """
+        return self.route_kp_from
+
+    def get_route_kp_to(self):
+        """
+        Get end KP (kilometer point) for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            End KP (kilometer point) for each route section.
+        """
+        return self.route_kp_to
+
+    def get_route_pipeline_section_type(self):
+        """
+        Get section type (e.g., 'Straight', 'Curve', etc.) for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Section type for each route section.
+        """
+        return self.route_pipeline_section_type
+
+    def get_route_curve_radius(self):
+        """
+        Get design curve radius for each route section.
+
+        Returns
+        -------
+        np.ndarray
+            Design curve radius for each route section.
+        """
+        return self.route_curve_radius
+
+    def get_survey_development(self):
+        """
+        Get development identifiers for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Development identifiers for each survey point.
+        """
+        return self.survey_development
+
+    def get_survey_type(self):
+        """
+        Get survey type for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Survey type for each survey point.
+        """
+        return self.survey_type
+
+    def get_survey_pipeline_group(self):
+        """
+        Get pipeline group identifiers for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Pipeline group identifiers for each survey point.
+        """
+        return self.survey_pipeline_group
+
+    def get_survey_pipeline(self):
+        """
+        Get pipeline identifiers for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Pipeline identifiers for each survey point.
+        """
+        return self.survey_pipeline
+
+    def get_survey_kp(self):
+        """
+        Get KP (kilometer point) for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            KP (kilometer point) for each survey point.
+        """
+        return self.survey_kp
+
+    def get_survey_easting(self):
+        """
+        Get easting coordinate for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Easting coordinate for each survey point.
+        """
+        return self.survey_easting
+
+    def get_survey_northing(self):
+        """
+        Get northing coordinate for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Northing coordinate for each survey point.
+        """
+        return self.survey_northing
+
+    def get_survey_section_type(self):
+        """
+        Get section type ('Straight', 'Curve', etc.) for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Section type for each survey point.
+        """
+        return self.survey_section_type
+
+    def get_survey_section_no(self):
+        """
+        Get section number for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Section number for each survey point.
+        """
+        return self.survey_section_no
+
+    def get_survey_section_kp_mod(self):
+        """
+        Get section-modified KP for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Section-modified KP for each survey point.
+        """
+        return self.survey_section_kp_mod
+
+    def get_survey_section_easting_mod(self):
+        """
+        Get section-modified easting coordinates for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Section-modified easting coordinates for each survey point.
+        """
+        return self.survey_section_easting_mod
+
+    def get_survey_section_northing_mod(self):
+        """
+        Get section-modified northing coordinates for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Section-modified northing coordinates for each survey point.
+        """
+        return self.survey_section_northing_mod
+
+    def get_survey_feature(self):
+        """
+        Get feature label (e.g., 'PWMD', 'LBMD', 'ILT') for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Feature label for each survey point.
+        """
+        return self.survey_feature
+
+    def get_survey_design_route_curve_radius(self):
+        """
+        Get design route curve radius for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Design route curve radius for each survey point.
+        """
+        return self.survey_design_route_curve_radius
+
+    def get_survey_actual_route_curve_radius(self):
+        """
+        Get fitted curve radius for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Fitted curve radius for each survey point.
+        """
+        return self.survey_actual_route_curve_radius
+
+    def get_survey_group_section_no(self):
+        """
+        Get group section number for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Group section number for each survey point.
+        """
+        return self.survey_group_section_no
+
+    def get_survey_group_section_type(self):
+        """
+        Get group section type for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Group section type for each survey point.
+        """
+        return self.survey_group_section_type
+
+    def get_survey_group_section_kp_mod(self):
+        """
+        Get group section-modified KP for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Group section-modified KP for each survey point.
+        """
+        return self.survey_group_section_kp_mod
+
+    def get_survey_group_section_easting_mod(self):
+        """
+        Get group section-modified easting coordinates for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Group section-modified easting coordinates for each survey point.
+        """
+        return self.survey_group_section_easting_mod
+
+    def get_survey_group_section_northing_mod(self):
+        """
+        Get group section-modified northing coordinates for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Group section-modified northing coordinates for each survey point.
+        """
+        return self.survey_group_section_northing_mod
+
 class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
-    Rolling window sigma-clipping despiking for grouped pipeline survey data.
-
     This class identifies and removes outlier values from survey data using a rolling window
-    sigma-clipping algorithm, applied group-wise. Outliers are replaced with NaN, preserving
-    the original data alignment and group structure.
+    sigma-clipping algorithm. Outliers are replaced with NaN, preserving the original data
+    alignment and group structure.
 
     Parameters
     ----------
@@ -790,20 +1087,18 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.group_section_type,
         ))
         self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
-        # Initialize attributes
-        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
+        # Call the processing function
+        self._process()
 
-    def process(self):
+    def _process(self):
         """
-        Despike outliers in self.y using a rolling window sigma-clipping algorithm.
+        Despike outliers in using a rolling window sigma-clipping algorithm.
         Outliers are replaced with NaN.
 
-        Parameters
-        ----------
-        window : int, optional
-            Size of the rolling window (must be odd). Default is 11.
-        sigma : float, optional
-            Sigma threshold for clipping. Default is 3.0.
+        Returns
+        -------
+        np.ndarray
+            The despiked y values (i.e., northings) for each survey point.
         """
         def sigma_clip_filter(values):
             center = values[len(values) // 2]
@@ -840,6 +1135,17 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
                 y_g, sigma_clip_filter, size=self.window, mode='nearest'
             )
             self.y_despike[idx] = y_g_despiked
+
+    def get_y_despike(self):
+        """
+        Get the despiked y values (i.e., northings) for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Despiked y values for each survey point.
+        """
+        return self.y_despike
 
 class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
@@ -896,8 +1202,10 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
         self.arc_length = np.full(self.x.shape[0], np.nan, dtype=float)
         self.angle = np.full(self.x.shape[0], np.nan, dtype=float)
         self.curvature = np.full(self.x.shape[0], np.nan, dtype=float)
+        # Call the processing function
+        self._process()
 
-    def process(self):
+    def _process(self):
         """
         Calculate the arc length, angle and curvature of the pipeline defined by easting and
         northing coordinates, for each group section. The result is aligned with the original
@@ -1020,6 +1328,39 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
             self.angle[idx] = angle_full
             self.curvature[idx] = curvature_full
 
+    def get_arc_length(self):
+        """
+        Get the arc length of the pipeline.
+
+        Returns
+        -------
+        np.ndarray
+            Arc length for each survey point.
+        """
+        return self.arc_length
+
+    def get_angle(self):
+        """
+        Get the tangent angle of the pipeline.
+
+        Returns
+        -------
+        np.ndarray
+            Tangent angle for each survey point.
+        """
+        return self.angle
+
+    def get_curvature(self):
+        """
+        Get the curvature of the pipeline.
+
+        Returns
+        -------
+        np.ndarray
+            Curvature for each survey point.
+        """
+        return self.curvature
+
 class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
     Class to perform FFT smoothing and spectral analysis on the pipeline survey data, grouped by
@@ -1072,25 +1413,28 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         ))
         self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
         self.cutoff = cutoff
-        # Initialize attributes
-        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
+        # Initialize _filter attributes
         self.y_smooth = np.full_like(self.y, np.nan, dtype=float)
         self.freqs = np.full_like(self.y, np.nan, dtype=float)
         self.fft = np.full_like(self.y, np.nan, dtype=complex)
         self.freqs_raw = np.full_like(self.y, np.nan, dtype=float)
         self.fft_raw = np.full_like(self.y, np.nan, dtype=complex)
-        # Prepare fft_welch attributes
+        # Initialize _welch attributes
         self.psd_development = []
         self.psd_survey_type = []
         self.psd_pipeline_group = []
         self.psd_group_section_type = []
         self.psd_freqs = []
         self.psd_vals = []
-        # Reconstruction arrays
+        # Initialize _reconstruct_coordinates_from_curvature attributes
         self.x_recon = np.full_like(self.x, np.nan, dtype=float)
         self.y_recon = np.full_like(self.x, np.nan, dtype=float)
+        # Call the processing functions
+        self._filter()
+        self._welch()
+        self._reconstruct_coordinates_from_curvature()
 
-    def filter(self):
+    def _filter(self):
         """
         Apply FFT low-pass filtering to each group, deduplicating (x_g, y_g) pairs within a group
         before filtering.
@@ -1190,7 +1534,7 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.freqs_raw[mask] = freqs_raw_full
             self.fft_raw[mask] = fft_raw_full
 
-    def welch(self, nperseg=256):
+    def _welch(self, nperseg=256):
         """
         Compute the Power Spectral Density (PSD) using Welch's method for each group.
 
@@ -1262,7 +1606,7 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.psd_freqs.append(f_welch)
             self.psd_vals.append(pxx_welch)
 
-    def reconstruct_coordinates_from_curvature(self):
+    def _reconstruct_coordinates_from_curvature(self):
         """
         Reconstruct eastings and northings from arc length and smoothed curvature for each group.
         The result is aligned with self.x and self.y_smooth.
@@ -1327,6 +1671,149 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             self.x_recon[group_indices] = x_rot
             self.y_recon[group_indices] = y_rot
 
+    def get_y_smooth(self):
+        """
+        Get the FFT smoothed y values.
+
+        Returns
+        -------
+        np.ndarray
+            FFT smoothed y values for each survey point.
+        """
+        return self.y_smooth
+
+    def get_freqs(self):
+        """
+        Get the filtered frequency values.
+
+        Returns
+        -------
+        np.ndarray
+            Filtered frequency values for each survey point.
+        """
+        return self.freqs
+
+    def get_fft(self):
+        """
+        Get the filtered FFT values.
+
+        Returns
+        -------
+        np.ndarray
+            Filtered FFT values for each survey point.
+        """
+        return self.fft
+
+    def get_freqs_raw(self):
+        """
+        Get the raw (unfiltered) frequency values.
+
+        Returns
+        -------
+        np.ndarray
+            Raw frequency values for each survey point.
+        """
+        return self.freqs_raw
+
+    def get_fft_raw(self):
+        """
+        Get the raw (unfiltered) FFT values.
+
+        Returns
+        -------
+        np.ndarray
+            Raw FFT values for each survey point.
+        """
+        return self.fft_raw
+
+    def get_psd_development(self):
+        """
+        Get the PSD development values.
+
+        Returns
+        -------
+        list
+            PSD development values for each group.
+        """
+        return self.psd_development
+
+    def get_psd_survey_type(self):
+        """
+        Get the PSD survey type values.
+
+        Returns
+        -------
+        list
+            PSD survey type values for each group.
+        """
+        return self.psd_survey_type
+
+    def get_psd_pipeline_group(self):
+        """
+        Get the PSD pipeline group values.
+
+        Returns
+        -------
+        list
+            PSD pipeline group values for each group.
+        """
+        return self.psd_pipeline_group
+
+    def get_psd_group_section_type(self):
+        """
+        Get the PSD group section type values.
+
+        Returns
+        -------
+        list
+            PSD group section type values for each group.
+        """
+        return self.psd_group_section_type
+
+    def get_psd_freqs(self):
+        """
+        Get the PSD frequency arrays.
+
+        Returns
+        -------
+        list
+            PSD frequency arrays for each group.
+        """
+        return self.psd_freqs
+
+    def get_psd_vals(self):
+        """
+        Get the PSD values arrays.
+
+        Returns
+        -------
+        list
+            PSD values arrays for each group.
+        """
+        return self.psd_vals
+
+    def get_x_recon(self):
+        """
+        Get the reconstructed x (easting) coordinates.
+
+        Returns
+        -------
+        np.ndarray
+            Reconstructed x coordinates for each survey point.
+        """
+        return self.x_recon
+
+    def get_y_recon(self):
+        """
+        Get the reconstructed y (northing) coordinates.
+
+        Returns
+        -------
+        np.ndarray
+            Reconstructed y coordinates for each survey point.
+        """
+        return
+
 class GaussianSmoother:
     """
     Class to perform Gaussian kernel smoothing on the pipeline survey, grouped by
@@ -1360,8 +1847,10 @@ class GaussianSmoother:
         ))
         self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
         self.y_smooth = np.full_like(self.y, np.nan, dtype=float)
+        # Call the processing function
+        self._process()
 
-    def process(self):
+    def _process(self):
         """
         Apply Gaussian kernel smoothing to each group, using bandwidth.
 
@@ -1407,3 +1896,14 @@ class GaussianSmoother:
                 else:
                     y_smooth_g[i] = np.nan  # or 0, or skip, depending on your needs
             self.y_smooth[mask] = y_smooth_g
+
+    def get_y_smooth(self):
+        """
+        Get the smoothed y values (i.e., northings) for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Smoothed y values for each survey point.
+        """
+        return self.y_smooth

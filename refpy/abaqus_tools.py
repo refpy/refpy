@@ -2,7 +2,8 @@
 This module provides functionality to create Abaqus sensitivity files by replacing parameter fields
 in an Abaqus template file and generating Python code blocks for parameterized studies.
 
-Features:
+Features
+--------
  - The `AbaqusPy` class automates the process of reading a template, replacing parameter fields,
    generating Python function files for embedded code blocks, and producing final sensitivity files.
  - Designed for use in finite element sensitivity studies and parameter sweeps with Abaqus .inp

@@ -2,13 +2,14 @@
 This module provides the core class and functions for representing and calculating the main
 geometric and material properties of pipeline sections.
 
-Features:
- - The `Pipe` class encapsulates the geometry and material characteristics of a pipeline section,
-   supporting both scalar and array-based calculations for batch processing.
- - Methods for computing inner/outer diameters, areas, steel and coating cross-sections, stiffness,
-   and moments of inertia.
- - Designed for use in subsea pipeline and riser engineering, but general enough for any pipeline
-   property calculations.
+**Features:**
+
+- The `Pipe` class encapsulates the geometry and material characteristics of a pipeline section,
+  supporting both scalar and array-based calculations for batch processing.
+- Methods for computing inner/outer diameters, areas, steel and coating cross-sections, stiffness,
+  and moments of inertia.
+- Designed for use in subsea pipeline and riser engineering, but general enough for any pipeline
+  property calculations.
 
 All calculations are vectorized using NumPy for efficiency and flexibility.
 
@@ -25,15 +26,15 @@ class Pipe: # pylint: disable=too-many-arguments
 
     Parameters
     ----------
-    outer_diameter : float, array-like, mandatory.
-        Outer diameter of the pipe (m).
-    wall_thickness : float, array-like, mandatory.
-        Wall thickness of the pipe (m).
-    coating_thickness : float, array-like, optional
+    outer_diameter : float or array-like, optional
+        Outer diameter of the pipe (m). Default is 0.
+    wall_thickness : float or array-like, optional
+        Wall thickness of the pipe (m). Default is 0.
+    coating_thickness : float or array-like, optional
         Coating wall thickness (m). Default is 0.
-    corrosion_allowance : float, array-like, optional
+    corrosion_allowance : float or array-like, optional
         Corrosion allowance (m). Default is 0.
-    youngs_modulus : float, array-like, optional
+    youngs_modulus : float or array-like, optional
         Young's modulus of the material (Pa). Default is 0.
     """
     def __init__(

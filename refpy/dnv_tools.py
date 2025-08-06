@@ -2,15 +2,15 @@
 This module provides classes and functions for calculating DNV pipeline limit states and material
 properties.
 
-Features:
- - The `DNVGeneral` class implements calculations for temperature derating, yield and tensile
-   strength, and characteristic material burst strength, supporting both scalar and array-based
-   inputs.
- - The `DNVLimitStates` class extends `DNVGeneral` and provides burst pressure calculations for
-   pipelines according to DNV standards.
- - Designed for use in subsea pipeline and riser engineering, but general enough for any DNV-based
-   pipeline property calculations.
+**Features:**
 
+- The `DNVGeneral` class implements calculations for temperature derating, yield and tensile
+  strength, and characteristic material burst strength, supporting both scalar and array-based
+  inputs.
+- The `DNVLimitStates` class extends `DNVGeneral` and provides burst pressure calculations for
+  pipelines according to DNV standards.
+- Designed for use in subsea pipeline and riser engineering, but general enough for any DNV-based
+  pipeline property calculations.
 All calculations are vectorized using NumPy for efficiency and flexibility.
 
 .. raw:: html
@@ -23,26 +23,25 @@ import numpy as np
 
 class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-arguments
     """
-    Base class for DNV pipeline limit state calculations.
-
-    Provides methods for temperature derating, yield and tensile strength, and characteristic
-    material burst strength, supporting both scalar and array-based inputs.
+    Base class for DNV pipeline limit state calculations. Provides methods for temperature
+    derating, yield and tensile strength, and characteristic material burst strength,
+    supporting both scalar and array-based inputs.
 
     Parameters
     ----------
-    outer_diameter : np.ndarray, optional
+    outer_diameter : float or array-like, optional
         The outer diameter of the pipeline.
-    corroded_wall_thickness : np.ndarray, optional
+    corroded_wall_thickness : float or array-like, optional
         The corroded wall thickness of the pipeline.
-    material : np.ndarray, optional
+    material : float or array-like, optional
         Material types: 1 for 'CMn' or '13CR', 2 for '22Cr' or '25CR'.
-    smys : np.ndarray, optional
+    smys : float or array-like, optional
         Specified minimum yield strengths.
-    smts : np.ndarray, optional
+    smts : float or array-like, optional
         Specified minimum tensile strengths.
-    temperature : np.ndarray, optional
+    temperature : float or array-like, optional
         Temperatures for calculations.
-    material_strength_factor : np.ndarray, optional
+    material_strength_factor : float or array-like, optional
         Material strength factor.
 
     Notes
@@ -78,7 +77,7 @@ class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-argum
 
         Returns
         -------
-        np.ndarray
+        temperature_derated_stress : np.ndarray
             The derating stress values for the given materials and temperatures.
 
         Raises
@@ -118,7 +117,7 @@ class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-argum
 
         Returns
         -------
-        np.ndarray
+        yield_stress : np.ndarray
             The yield stress values of the materials at the given temperatures and strength factor.
 
         Examples
@@ -145,7 +144,7 @@ class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-argum
 
         Returns
         -------
-        np.ndarray
+        tensile_strength : np.ndarray
             The tensile strength values of the materials at the given
             temperatures and strength factor.
 
@@ -173,7 +172,7 @@ class DNVGeneral: # pylint: disable=too-many-instance-attributes, too-many-argum
 
         Returns
         -------
-        np.ndarray
+        characteristic_burst_strength : np.ndarray
             The characteristic material burst strength values at the given
             temperatures and strength factor.
 
@@ -208,19 +207,19 @@ class DNVLimitStates(DNVGeneral):
 
     Parameters
     ----------
-    outer_diameter : np.ndarray, optional
+    outer_diameter : float or array-like, optional
         The outer diameter of the pipeline.
-    corroded_wall_thickness : np.ndarray, optional
+    corroded_wall_thickness : float or array-like, optional
         The corroded wall thickness of the pipeline.
-    material : np.ndarray, optional
+    material : float or array-like, optional
         Material types: 1 for 'CMn' or '13CR', 2 for '22Cr' or '25CR'.
-    smys : np.ndarray, optional
+    smys : float or array-like, optional
         Specified minimum yield strengths.
-    smts : np.ndarray, optional
+    smts : float or array-like, optional
         Specified minimum tensile strengths.
-    temperature : np.ndarray, optional
+    temperature : float or array-like, optional
         Temperatures for calculations.
-    material_strength_factor : np.ndarray, optional
+    material_strength_factor : float or array-like, optional
         Material strength factor.
 
     Notes
@@ -234,7 +233,7 @@ class DNVLimitStates(DNVGeneral):
 
         Returns
         -------
-        np.ndarray
+        burst_pressure : np.ndarray
             The burst pressure values of the pipeline.
 
         Raises

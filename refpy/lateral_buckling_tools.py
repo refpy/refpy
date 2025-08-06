@@ -2,12 +2,13 @@
 This module provides classes and functions for lateral buckling calculations and friction factor
 distribution fitting for subsea pipelines.
 
-Features:
- - The `LBDistributions` class implements lognormal distribution fitting for geotechnical friction
-   factors, supporting low, best, and high estimates (LE, BE, HE) and multiple fit types.
- - Designed for use in pipeline lateral buckling reliability analysis and geotechnical parameter
-   estimation.
- - All calculations are vectorized using NumPy and leverage SciPy for statistical fitting.
+**Features:**
+
+- The `LBDistributions` class implements lognormal distribution fitting for geotechnical friction
+  factors, supporting low, best, and high estimates (LE, BE, HE) and multiple fit types.
+- Designed for use in pipeline lateral buckling reliability analysis and geotechnical parameter
+  estimation.
+- All calculations are vectorized using NumPy and leverage SciPy for statistical fitting.
 
 .. raw:: html
 

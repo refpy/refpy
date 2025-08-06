@@ -2,12 +2,13 @@
 This module provides classes and functions for calculating the capacity of soils using various
 models for a given pipe and soil configuration.
 
-Features:
- - The `PSI` class implements soil capacity calculations for different pipe and soil properties,
-   supporting vectorized and model-based approaches.
- - Designed for use in subsea pipeline and riser engineering, but general enough for any
-   pipe-soil interaction analysis.
- - All calculations are vectorized using NumPy for efficiency and flexibility.
+**Features:**
+
+- The `PSI` class implements soil capacity calculations for different pipe and soil properties,
+  supporting vectorized and model-based approaches.
+- Designed for use in subsea pipeline and riser engineering, but general enough for any
+  pipe-soil interaction analysis.
+- All calculations are vectorized using NumPy for efficiency and flexibility.
 
 .. raw:: html
 

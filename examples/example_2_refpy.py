@@ -54,20 +54,20 @@ def example2_data():
     # Full survey (not anonymised)
     oos.process(anonymise=False)
     df1 = pd.DataFrame({
-        'Development': oos.survey_development,
-        'Survey Type': oos.survey_type,
-        'Pipeline Group': oos.survey_pipeline_group,
-        'Pipeline': oos.survey_pipeline,
-        'Section Type': oos.survey_section_type,
-        'Section No': oos.survey_section_no,
-        'KP Mod': oos.survey_section_kp_mod,
-        'Easting Mod': oos.survey_section_easting_mod,
-        'Northing Mod': oos.survey_section_northing_mod,
-        'Features': oos.survey_feature,
-        'Design Route Curve Radius': oos.survey_design_route_curve_radius,
-        'Actual Route Curve Radius': oos.survey_actual_route_curve_radius
+        'Development': oos.get_survey_development(),
+        'Survey Type': oos.get_survey_type(),
+        'Pipeline Group': oos.get_survey_pipeline_group(),
+        'Pipeline': oos.get_survey_pipeline(),
+        'Section Type': oos.get_survey_section_type(),
+        'Section No': oos.get_survey_section_no(),
+        'KP Mod': oos.get_survey_section_kp_mod(),
+        'Easting Mod': oos.get_survey_section_easting_mod(),
+        'Northing Mod': oos.get_survey_section_northing_mod(),
+        'Features': oos.get_survey_feature(),
+        'Design Route Curve Radius': oos.get_survey_design_route_curve_radius(),
+        'Actual Route Curve Radius': oos.get_survey_actual_route_curve_radius()
     })
-    # Initialise the despiking class
+    # Initialise and run the despiking class
     despike = refpy.OOSDespiker(
         development = df1['Development'],
         survey_type = df1['Survey Type'],
@@ -77,31 +77,29 @@ def example2_data():
         window = 100,
         sigma = 1.5
     )
-    # Run the despiking process
-    despike.process()
-    df1['Northing Mod - Despike'] = despike.y_despike
+    df1['Northing Mod - Despike'] = despike.get_y_despike()
     # Anonymised survey
     oos.process(anonymise=True)
     df2 = pd.DataFrame({
-        'Development': oos.survey_development,
-        'Survey Type': oos.survey_type,
-        'Pipeline Group': oos.survey_pipeline_group,
-        'Pipeline': oos.survey_pipeline,
-        'Section Type': oos.survey_section_type,
-        'Section No': oos.survey_section_no,
-        'KP Mod': oos.survey_section_kp_mod,
-        'Easting Mod': oos.survey_section_easting_mod,
-        'Northing Mod': oos.survey_section_northing_mod,
-        'Features': oos.survey_feature,
-        'Design Route Curve Radius': oos.survey_design_route_curve_radius,
-        'Actual Route Curve Radius': oos.survey_actual_route_curve_radius,
-        'Group Section Type': oos.survey_group_section_type,
-        'Group Section No': oos.survey_group_section_no,
-        'Group KP Mod': oos.survey_group_section_kp_mod,
-        'Group Easting Mod': oos.survey_group_section_easting_mod,
-        'Group Northing Mod': oos.survey_group_section_northing_mod
+        'Development': oos.get_survey_development(),
+        'Survey Type': oos.get_survey_type(),
+        'Pipeline Group': oos.get_survey_pipeline_group(),
+        'Pipeline': oos.get_survey_pipeline(),
+        'Section Type': oos.get_survey_section_type(),
+        'Section No': oos.get_survey_section_no(),
+        'KP Mod': oos.get_survey_section_kp_mod(),
+        'Easting Mod': oos.get_survey_section_easting_mod(),
+        'Northing Mod': oos.get_survey_section_northing_mod(),
+        'Features': oos.get_survey_feature(),
+        'Design Route Curve Radius': oos.get_survey_design_route_curve_radius(),
+        'Actual Route Curve Radius': oos.get_survey_actual_route_curve_radius(),
+        'Group Section Type': oos.get_survey_group_section_type(),
+        'Group Section No': oos.get_survey_group_section_no(),
+        'Group KP Mod': oos.get_survey_group_section_kp_mod(),
+        'Group Easting Mod': oos.get_survey_group_section_easting_mod(),
+        'Group Northing Mod': oos.get_survey_group_section_northing_mod()
     })
-    # Initialise the despiking class
+    # Initialise and run the despiking class
     despike = refpy.OOSDespiker(
         development = df2['Development'],
         survey_type = df2['Survey Type'],
@@ -112,8 +110,7 @@ def example2_data():
         sigma = 3.0
     )
     # Run the despiking process
-    despike.process()
-    df2['Group Northing Mod - Despike'] = despike.y_despike
+    df2['Group Northing Mod - Despike'] = despike.get_y_despike()
     # Initialise the OOS curvature class
     curvature = refpy.OOSCurvature(
         development = df2['Development'],
@@ -124,11 +121,10 @@ def example2_data():
         y = df2['Group Northing Mod - Despike']
     )
     # Run the curvature process
-    curvature.process()
-    df2['Group Arc Length'] = curvature.arc_length
-    df2['Group Angle'] = curvature.angle
-    df2['Group Curvature'] = curvature.curvature
-    # Initialise FFT smoothing class - Coordinates
+    df2['Group Arc Length'] = curvature.get_arc_length()
+    df2['Group Angle'] = curvature.get_angle()
+    df2['Group Curvature'] = curvature.get_curvature()
+    # Initialise and run FFT smoothing class - Coordinates
     fft_smooth = refpy.FFTSmoother(
         development = df2['Development'],
         survey_type = df2['Survey Type'],
@@ -138,22 +134,19 @@ def example2_data():
         y = df2['Group Northing Mod - Despike'],
         cutoff = FFT_CUTOFF_WAVELENGTH
     )
-    # Run the FFT smoothing filter and welch processes
-    fft_smooth.filter()
-    df2['Group FFT Smooth Coordinate - Northing Mod'] = fft_smooth.y_smooth
-    df2['Group FFT Smooth Coordinate - Frequencies - Raw'] = fft_smooth.freqs_raw
-    df2['Group FFT Smooth Coordinate - Spectrum - Raw'] = fft_smooth.fft_raw
-    df2['Group FFT Smooth Coordinate - Frequencies - Filtered'] = fft_smooth.freqs
-    df2['Group FFT Smooth Coordinate - Spectrum - Filtered'] = fft_smooth.fft
+    df2['Group FFT Smooth Coordinate - Northing Mod'] = fft_smooth.get_y_smooth()
+    df2['Group FFT Smooth Coordinate - Frequencies - Raw'] = fft_smooth.get_freqs_raw()
+    df2['Group FFT Smooth Coordinate - Spectrum - Raw'] = fft_smooth.get_fft_raw()
+    df2['Group FFT Smooth Coordinate - Frequencies - Filtered'] = fft_smooth.get_freqs()
+    df2['Group FFT Smooth Coordinate - Spectrum - Filtered'] = fft_smooth.get_fft()
     df2['Group FFT Smooth Coordinate - Cutoff'] = FFT_CUTOFF_WAVELENGTH
-    fft_smooth.welch()
     df3 = pd.DataFrame({
-        'Development': fft_smooth.psd_development,
-        'Survey Type': fft_smooth.psd_survey_type,
-        'Pipeline Group': fft_smooth.psd_pipeline_group,
-        'Section Type': fft_smooth.psd_group_section_type,
-        'Coordinate - Frequencies': fft_smooth.psd_freqs,
-        'Coordinate - PSD': fft_smooth.psd_vals,
+        'Development': fft_smooth.get_psd_development(),
+        'Survey Type': fft_smooth.get_psd_survey_type(),
+        'Pipeline Group': fft_smooth.get_psd_pipeline_group(),
+        'Section Type': fft_smooth.get_psd_group_section_type(),
+        'Coordinate - Frequencies': fft_smooth.get_psd_freqs(),
+        'Coordinate - PSD': fft_smooth.get_psd_vals(),
     })
     # Initialise FFT smoothing class - Curvatures
     fft_smooth = refpy.FFTSmoother(
@@ -165,19 +158,16 @@ def example2_data():
         y = df2['Group Curvature'],
         cutoff = FFT_CUTOFF_WAVELENGTH_CURVATURE
     )
-    fft_smooth.filter()
-    df2['Group FFT Smooth Curvature - Curvature'] = fft_smooth.y_smooth
-    df2['Group FFT Smooth Curvature - Frequencies - Raw'] = fft_smooth.freqs_raw
-    df2['Group FFT Smooth Curvature - Spectrum - Raw'] = fft_smooth.fft_raw
-    df2['Group FFT Smooth Curvature - Frequencies - Filtered'] = fft_smooth.freqs
-    df2['Group FFT Smooth Curvature - Spectrum - Filtered'] = fft_smooth.fft
+    df2['Group FFT Smooth Curvature - Curvature'] = fft_smooth.get_y_smooth()
+    df2['Group FFT Smooth Curvature - Frequencies - Raw'] = fft_smooth.get_freqs_raw()
+    df2['Group FFT Smooth Curvature - Spectrum - Raw'] = fft_smooth.get_fft_raw()
+    df2['Group FFT Smooth Curvature - Frequencies - Filtered'] = fft_smooth.get_freqs()
+    df2['Group FFT Smooth Curvature - Spectrum - Filtered'] = fft_smooth.get_fft()
     df2['Group FFT Smooth Curvature - Cutoff'] = FFT_CUTOFF_WAVELENGTH_CURVATURE
-    fft_smooth.welch()
-    df3['Curvature - Frequencies'] = fft_smooth.psd_freqs
-    df3['Curvature - PSD'] = fft_smooth.psd_vals
-    fft_smooth.reconstruct_coordinates_from_curvature()
-    df2['Group FFT Smooth Curvature - Easting Mod'] = fft_smooth.x_recon
-    df2['Group FFT Smooth Curvature - Northing Mod'] = fft_smooth.y_recon
+    df3['Curvature - Frequencies'] = fft_smooth.get_psd_freqs()
+    df3['Curvature - PSD'] = fft_smooth.get_psd_vals()
+    df2['Group FFT Smooth Curvature - Easting Mod'] = fft_smooth.get_x_recon()
+    df2['Group FFT Smooth Curvature - Northing Mod'] = fft_smooth.get_y_recon()
     # Initialise Gaussian smoothing class
     gaussian_smooth = refpy.GaussianSmoother(
         development = df2['Development'],
@@ -188,8 +178,7 @@ def example2_data():
         y = df2['Group Northing Mod - Despike'],
         bandwidth = GAUSSIAN_BANDWIDTH
     )
-    gaussian_smooth.process()
-    df2['Group Gaussian Smooth Coordinate - Northing Mod'] = gaussian_smooth.y_smooth
+    df2['Group Gaussian Smooth Coordinate - Northing Mod'] = gaussian_smooth.get_y_smooth()
     df2['Group Gaussian Smooth Coordinate - Bandwidth'] = GAUSSIAN_BANDWIDTH
     return df1, df2, df3
 
