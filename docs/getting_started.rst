@@ -78,7 +78,7 @@ This makes it easy to check that all core functionality is working as intended a
 Running Example Scripts
 ***********************
 
-The repository also includes two files called ``example_1_refpy.py`` and ``example_2_refpy.py`` that demonstrates how to use the main features of RefPy with real input data. This script is a practical starting point for new users.
+The repository also includes three files called ``example_1_refpy.py``, ``example_2_refpy.py`` and ``example_3_refpy.py`` that demonstrates how to use the main features of RefPy with real input data. This script is a practical starting point for new users.
 
 How to Run the Example
 ----------------------
@@ -87,20 +87,16 @@ To run the example scripts, execute the following commands in your terminal from
 
 .. code-block:: bash
 
-   $ python example_1_2_refpy.py
+   $ python example_1_refpy.py
+   $ python example_2_refpy.py
    $ python example_3_refpy.py
 
 What Does It Demonstrate?
 -------------------------
 
-The ``example_1_2_refpy.py`` script contains two worked examples:
+**The ``example_1_refpy.py`` script contains examples to demonstrate:**
 
-- **Pipe, DNV, PSI, LBDistributions Example:** Demonstrates how to create and use the ``Pipe``, ``DNVLimitStates``, ``PSI``, ``LBDistributions`` classes for pipeline property calculations.
-- **OOSSmoother and OOSAnonymisation Example:** Shows how to use the ``OOSSmoother`` and ``OOSAnonymisation`` classes for group-wise signal processing and survey data anonymisation.
-
-The ``example_3_refpy.py`` script contains one worked example:
-
-- **AbaqusPy Example:** Illustrates how to use the ``AbaqusPy`` class for generating Abaqus input files with sensitivity analysis.
+Pipe, DNV, PSI, LBDistributions Example: Demonstrates how to create and use the ``Pipe``, ``DNVLimitStates``, ``PSI``, ``LBDistributions`` classes for pipeline property calculations.
 
 .. figure:: _static/example_1.png
    :alt: Example 1
@@ -109,12 +105,16 @@ The ``example_3_refpy.py`` script contains one worked example:
 
    Example 1: Pipe, DNV, PSI and LB Calculations
 
+**The ``example_2_refpy.py`` script contains examples to show:**
+
+OOS Example: Shows how to use the ``OOSAnonymisation``, ``OOSDespiker``, ``OOSCurvature``, ``FFTSmoother``, ``GaussianSmoother`` classes for group-wise signal processing and survey data anonymisation.
+
 .. figure:: _static/example_2_plot1.png
    :alt: Example 2 Plot 1
    :width: 600
    :align: center
 
-   Example 2, Plot 1: Survey Route Overview. This plot is useful to visualise the out-of-straightness per survey section. It splits the survey route into individual sections and displays the out-of-straightness for each section, distinguishing between nominally straight and curved sections.
+   Example 2, Plot 1: Survey Route Overview. This plot is useful to visualise the out-of-straightness per survey section. It splits the survey route into individual sections and displays the out-of-straightness for each section, distinguishing between nominally straight and curved sections. It also shows locations where survey points have been despiked.
 
 .. figure:: _static/example_2_plot2.png
    :alt: Example 2 Plot 2
@@ -133,4 +133,29 @@ The ``example_3_refpy.py`` script contains one worked example:
    :width: 600
    :align: center
 
-   Example 2, Plot 3: Spectral Analysis. This plot visualises the wavelength distribution of the survey data, highlighting the noise associated with the survey.
+   Example 2, Plot 3: Spectral Analysis - Coordinates. This plot visualises the wavelength distribution of the survey data, highlighting the noise associated with the survey.
+
+.. figure:: _static/example_2_plot4.png
+   :alt: Example 2 Plot 4
+   :width: 600
+   :align: center
+
+   Example 2, Plot 4: Curvatures Smoothing. This plot is useful to visualise the smoothing effects on the curvature.
+
+.. figure:: _static/example_2_plot5.png
+   :alt: Example 2 Plot 3
+   :width: 600
+   :align: center
+
+   Example 2, Plot 5: Spectral Analysis - Curvatures. This plot visualises the radius of curvature distribution of the survey data, highlighting the noise associated with the survey curvatures.
+
+**The ``example_3_refpy.py`` script contains examples to illustrate:**
+
+AbaqusPy Example: Illustrates how to use the ``AbaqusPy`` class for generating Abaqus input files with sensitivity analysis.
+
+.. figure:: _static/example_3.png
+   :alt: Example 2 Plot 4
+   :width: 600
+   :align: center
+
+   Example 3: General Overview of a Master Abaqus Input File

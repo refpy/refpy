@@ -9,7 +9,10 @@ from .dnv_tools import DNVLimitStates
 from .lateral_buckling_tools import LBDistributions
 from .pipe_soil_interaction_tools import PSI
 from .oos_tools import OOSAnonymisation
-from .oos_tools import OOSSmoother
+from .oos_tools import OOSDespiker
+from .oos_tools import OOSCurvature
+from .oos_tools import FFTSmoother
+from .oos_tools import GaussianSmoother
 from .abaqus_tools import AbaqusPy
 
 # __all__ for explicit API exposure:
@@ -20,6 +23,9 @@ __all__ = [
     "LBDistributions",
     "PSI",
     "OOSAnonymisation",
-    "OOSSmoother",
+    "OOSDespiker",
+    "OOSCurvature",
+    "FFTSmoother",
+    "GaussianSmoother",
     "AbaqusPy"
 ]
