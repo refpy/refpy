@@ -4,7 +4,7 @@ Example script
 import pandas as pd
 import refpy
 
-def example1():
+def data():
     """
     Example workflow for pipeline design calculations using refpy.
 
@@ -23,7 +23,7 @@ def example1():
 
     # Import design data
     df = pd.read_excel(
-        'example_1.xlsx', sheet_name='Example1', header=None).iloc[1:].transpose()
+        'example_1.xlsx', sheet_name='data', header=None).iloc[1:].transpose()
     df.columns = df.iloc[0].to_numpy()
     df = df[1:].reset_index(drop=True)
 
@@ -83,7 +83,7 @@ def example1():
 ###
 ### Example 1
 ###
-dfe1 = example1()
+dfe1 = data()
 dfe1 = dfe1.transpose()
 new_cols = [f'Sensitivity{i}' for i in range(1, dfe1.shape[1]+1)]
 dfe1.columns = new_cols[:dfe1.shape[1]]

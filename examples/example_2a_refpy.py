@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import refpy
 
-def example2_data():
+def data():
     """
     Example workflow for OOS pipeline survey and route data processing using refpy.
 
@@ -182,7 +182,7 @@ def example2_data():
     df2['Group Gaussian Smooth Coordinate - Bandwidth'] = GAUSSIAN_BANDWIDTH
     return df1, df2, df3
 
-def example2_plot1(df):
+def plot1(df):
     """
     Plot Easting Mod vs Northing Mod for all pipelines and section numbers.
     Creates two subplots: one for Section Type = 'Straight', one for Section Type = 'Curve'.
@@ -269,7 +269,7 @@ def example2_plot1(df):
     plt.savefig('example_2a_plot1.png', dpi=300, bbox_inches='tight')
     plt.show()
 
-def example2_plot2(df):
+def plot2(df):
     """
     Plot Easting Mod vs Northing Mod for all pipeline groups and section types.
     Creates two subplots: one for Section Type = 'Straight', one for Section Type = 'Curve'.
@@ -492,7 +492,7 @@ def example2_plot2(df):
 
     plt.show()
 
-def example2_plot3(df1, df2):
+def plot3(df1, df2):
     """
     Plot group-wise FFT and Welch PSD spectra for pipeline survey data.
 
@@ -602,7 +602,7 @@ def example2_plot3(df1, df2):
     plt.savefig('example_2a_plot3.png', dpi=300, bbox_inches='tight')
     plt.show()
 
-def example2_plot4(df):
+def plot4(df):
     """
     Plot arc length vs curvature for all pipeline groups and section types.
     Creates two subplots: one for Section Type = 'Straight', one for Section Type = 'Curve'.
@@ -665,7 +665,7 @@ def example2_plot4(df):
     plt.savefig('example_2a_plot4.png', dpi=300, bbox_inches='tight')
     plt.show()
 
-def example2_plot5(df1, df2):
+def plot5(df1, df2):
     """
     Plot group-wise FFT and Welch PSD spectra for pipeline survey data.
 
@@ -785,9 +785,9 @@ PIPELINE = ['F1']
 FFT_CUTOFF_WAVELENGTH = 16  # Cutoff of smaller wavelengths in meters
 FFT_CUTOFF_WAVELENGTH_CURVATURE = 16  # Cutoff of smaller wavelengths in meters
 GAUSSIAN_BANDWIDTH = 4.0  # Bandwidth for Gaussian smoothing
-dfe2_1, dfe2_2, dfe2_3 = example2_data()
-example2_plot1(dfe2_1)
-example2_plot2(dfe2_2)
-example2_plot3(dfe2_2, dfe2_3)
-example2_plot4(dfe2_2)
-example2_plot5(dfe2_2, dfe2_3)
+dfe2_1, dfe2_2, dfe2_3 = data()
+plot1(dfe2_1)
+plot2(dfe2_2)
+plot3(dfe2_2, dfe2_3)
+plot4(dfe2_2)
+plot5(dfe2_2, dfe2_3)

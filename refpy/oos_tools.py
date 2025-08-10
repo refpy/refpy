@@ -1074,25 +1074,25 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
-        if development is None:
-            self.development = np.array(['Predefined'], dtype=object)
-        else:
-            self.development = np.asarray(development, dtype=object)
-        if survey_type is None:
-            self.survey_type = np.array(['Predefined'], dtype=object)
-        else:
-            self.survey_type = np.asarray(survey_type, dtype=object)
-        if pipeline_group is None:
-            self.pipeline_group = np.array(['Predefined'], dtype=object)
-        else:
-            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        if group_section_type is None:
-            self.group_section_type = np.array(['Predefined'], dtype=object)
-        else:
-            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.y = np.asarray(y)
         self.window = window
         self.sigma = sigma
+        if development is None:
+            self.development = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         # Initialize group-related attributes
         self.group_tuples = list(zip(
             self.development,
@@ -1219,24 +1219,24 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
         if development is None:
-            self.development = np.array(['Predefined'], dtype=object)
+            self.development = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.development = np.asarray(development, dtype=object)
         if survey_type is None:
-            self.survey_type = np.array(['Predefined'], dtype=object)
+            self.survey_type = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.survey_type = np.asarray(survey_type, dtype=object)
         if pipeline_group is None:
-            self.pipeline_group = np.array(['Predefined'], dtype=object)
+            self.pipeline_group = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.pipeline_group = np.asarray(pipeline_group, dtype=object)
         if group_section_type is None:
-            self.group_section_type = np.array(['Predefined'], dtype=object)
+            self.group_section_type = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.group_section_type = np.asarray(group_section_type, dtype=object)
-        self.x = np.asarray(x)
-        self.y = np.asarray(y)
         # Initialize group-related attributes
         self.group_tuples = list(zip(
             self.development,
@@ -1244,8 +1244,7 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
             self.pipeline_group,
             self.group_section_type,
         ))
-        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)
-        # Initialize attributes
+        self.unique_groups = sorted(set(self.group_tuples), key=self.group_tuples.index)        # Initialize attributes
         self.arc_length = np.full(self.x.shape[0], np.nan, dtype=float)
         self.angle = np.full(self.x.shape[0], np.nan, dtype=float)
         self.curvature = np.full(self.x.shape[0], np.nan, dtype=float)
@@ -1447,24 +1446,24 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
         if development is None:
-            self.development = np.array(['Predefined'], dtype=object)
+            self.development = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.development = np.asarray(development, dtype=object)
         if survey_type is None:
-            self.survey_type = np.array(['Predefined'], dtype=object)
+            self.survey_type = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.survey_type = np.asarray(survey_type, dtype=object)
         if pipeline_group is None:
-            self.pipeline_group = np.array(['Predefined'], dtype=object)
+            self.pipeline_group = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.pipeline_group = np.asarray(pipeline_group, dtype=object)
         if group_section_type is None:
-            self.group_section_type = np.array(['Predefined'], dtype=object)
+            self.group_section_type = np.full(self.y.size, 'Predefined', dtype=object)
         else:
             self.group_section_type = np.asarray(group_section_type, dtype=object)
-        self.x = np.asarray(x)
-        self.y = np.asarray(y)
         # Initialize group-related attributes
         self.group_tuples = list(zip(
             self.development,
@@ -1587,6 +1586,13 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
                     fft_g_full[i] = fft_g[idx]
                     freqs_raw_full[i] = freqs_g[idx]
                     fft_raw_full[i] = fft_vals_g[idx]
+
+            # Sort by ascending frequency
+            sort_idx = np.argsort(freqs_g_full)
+            freqs_g_full = freqs_g_full[sort_idx]
+            fft_g_full = fft_g_full[sort_idx]
+            freqs_raw_full = freqs_raw_full[sort_idx]
+            fft_raw_full = fft_raw_full[sort_idx]
 
             # Assign values
             self.y_smooth[mask] = y_smooth_g
@@ -1909,25 +1915,25 @@ class GaussianSmoother:
         bandwidth
     ):
         # Initialize GaussianSmoother attributes
-        if development is None:
-            self.development = np.array(['Predefined'], dtype=object)
-        else:
-            self.development = np.asarray(development, dtype=object)
-        if survey_type is None:
-            self.survey_type = np.array(['Predefined'], dtype=object)
-        else:
-            self.survey_type = np.asarray(survey_type, dtype=object)
-        if pipeline_group is None:
-            self.pipeline_group = np.array(['Predefined'], dtype=object)
-        else:
-            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        if group_section_type is None:
-            self.group_section_type = np.array(['Predefined'], dtype=object)
-        else:
-            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         self.bandwidth = bandwidth
+        if development is None:
+            self.development = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.full(self.y.size, 'Predefined', dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         # Initialize group-related attributes
         self.group_tuples = list(zip(
             self.development,

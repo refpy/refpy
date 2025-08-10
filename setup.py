@@ -2,16 +2,16 @@ from setuptools import setup, find_packages
 
 setup(
     name="refpy",
-    version="0.1.18",
+    version="0.1.19",
     description="Package for subsea pipelines and risers design in Python",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url="https://github.com/refpy/refpy",
     author="ismael-ripoll",
-    license="GNU General Public License v3.0",
+    license="MIT License",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
     packages=find_packages(),
