@@ -1040,18 +1040,20 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
 
     Parameters
     ----------
-    development : array-like
-        Development identifier for each survey point.
-    survey_type : array-like
-        Survey type for each survey point.
-    pipeline_group : array-like
-        Pipeline group for each survey point.
-    group_section_type : array-like
-        Group section type for each survey point.
+    development : array-like, optional
+        Development identifier for each survey point. If not provided, a default value is used.
+    survey_type : array-like, optional
+        Survey type for each survey point. If not provided, a default value is used.
+    pipeline_group : array-like, optional
+        Pipeline group for each survey point. If not provided, a default value is used.
+    group_section_type : array-like, optional
+        Group section type for each survey point. If not provided, a default value is used.
     x : array-like
-        Modified eastings for each survey point.
+        Coordinates associated with the signal for each survey point.
+        These can be either easting values or arc lengths, depending on context.
     y : array-like
-        Signal values (i.e., northings) for each survey point.
+        Signal values for each survey point.
+        These can be either northing values or curvatures, depending on context.
     window : int, optional
         Size of the rolling window for sigma-clipping (default: 11).
     sigma : float, optional
@@ -1060,10 +1062,10 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
     def __init__(
             self,
             *,
-            development,
-            survey_type,
-            pipeline_group,
-            group_section_type,
+            development=None,
+            survey_type=None,
+            pipeline_group=None,
+            group_section_type=None,
             y,
             window=11,
             sigma=3.0
@@ -1072,10 +1074,22 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
-        self.development = np.asarray(development, dtype=object)
-        self.survey_type = np.asarray(survey_type, dtype=object)
-        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        if development is None:
+            self.development = np.array(['Predefined'], dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.array(['Predefined'], dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.y = np.asarray(y)
         self.window = window
         self.sigma = sigma
@@ -1094,13 +1108,18 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         """
         Despike outliers in using a rolling window sigma-clipping algorithm.
         Outliers are replaced with NaN.
-
-        Returns
-        -------
-        np.ndarray
-            The despiked y values (i.e., northings) for each survey point.
         """
-        def sigma_clip_filter(values):
+        def sigma_clip_filter_mean(values):
+            center = values[len(values) // 2]
+            win_mean = np.nanmean(values)
+            win_std = np.nanstd(values)
+            if win_std == 0 or np.isnan(win_std):
+                return center
+            if abs(center - win_mean) > self.sigma * win_std:
+                return win_mean
+            return center
+
+        def sigma_clip_filter_nan(values):
             center = values[len(values) // 2]
             win_mean = np.nanmean(values)
             win_std = np.nanstd(values)
@@ -1110,8 +1129,9 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
                 return np.nan
             return center
 
-        # Create a copy of the original y values
-        self.y_despike = np.full_like(self.y, np.nan, dtype=float)
+        # Initialise despiked arrays
+        self.y_despike_mean = np.full_like(self.y, np.nan, dtype=float)
+        self.y_despike_nan = np.full_like(self.y, np.nan, dtype=float)
 
         for group in self.unique_groups:
 
@@ -1127,25 +1147,40 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             idx = np.where(mask)[0]
             y_g = self.y[idx]
             if len(y_g) < self.window:
-                self.y_despike[idx] = y_g
+                self.y_despike_mean[idx] = y_g
                 continue
 
             # Apply sigma clipping filter using a rolling window
-            y_g_despiked = generic_filter(
-                y_g, sigma_clip_filter, size=self.window, mode='nearest'
+            y_g_despiked_mean = generic_filter(
+                y_g, sigma_clip_filter_mean, size=self.window, mode='nearest'
             )
-            self.y_despike[idx] = y_g_despiked
+            y_g_despiked_nan = generic_filter(
+                y_g, sigma_clip_filter_nan, size=self.window, mode='nearest'
+            )
+            self.y_despike_mean[idx] = y_g_despiked_mean
+            self.y_despike_nan[idx] = y_g_despiked_nan
 
-    def get_y_despike(self):
+    def get_y_despike_mean(self):
         """
-        Get the despiked y values (i.e., northings) for each survey point.
+        Get the despiked y values (i.e., northings or curvatures) for each survey point.
 
         Returns
         -------
         np.ndarray
             Despiked y values for each survey point.
         """
-        return self.y_despike
+        return self.y_despike_mean
+
+    def get_y_despike_nan(self):
+        """
+        Get the despiked y values (i.e., northings or curvatures) for each survey point.
+
+        Returns
+        -------
+        np.ndarray
+            Despiked y values for each survey point.
+        """
+        return self.y_despike_nan
 
 class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
@@ -1157,26 +1192,26 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
 
     Parameters
     ----------
-    development : array-like
-        Development identifier for each survey point.
-    survey_type : array-like
-        Survey type for each survey point.
-    pipeline_group : array-like
-        Pipeline group for each survey point.
-    group_section_type : array-like
-        Group section type for each survey point.
+    development : array-like, optional
+        Development identifier for each survey point. If not provided, a default value is used.
+    survey_type : array-like, optional
+        Survey type for each survey point. If not provided, a default value is used.
+    pipeline_group : array-like, optional
+        Pipeline group for each survey point. If not provided, a default value is used.
+    group_section_type : array-like, optional
+        Group section type for each survey point. If not provided, a default value is used.
     x : array-like
-        Modified eastings or arc length for each survey point.
+        These can be either eastings or anonymised eastings, depending on context.
     y : array-like
-        Modified northings for each survey point.
+        These can be either northings or anonymised northings, depending on context.
     """
     def __init__(
             self,
             *,
-            development,
-            survey_type,
-            pipeline_group,
-            group_section_type,
+            development=None,
+            survey_type=None,
+            pipeline_group=None,
+            group_section_type=None,
             x,
             y
         ):
@@ -1184,10 +1219,22 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
-        self.development = np.asarray(development, dtype=object)
-        self.survey_type = np.asarray(survey_type, dtype=object)
-        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        if development is None:
+            self.development = np.array(['Predefined'], dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.array(['Predefined'], dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         # Initialize group-related attributes
@@ -1368,28 +1415,30 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
     
     Parameters
     ----------
-    development : array_like, mandatory
-        Development identifier for each point.
-    survey_type : array_like, mandatory
-        Survey type for each point.
-    pipeline_group : array_like, mandatory
-        Pipeline group for each point.
-    group_section_type : array_like, mandatory
-        Group section type for each point.
+    development : array-like, optional
+        Development identifier for each survey point. If not provided, a default value is used.
+    survey_type : array-like, optional
+        Survey type for each survey point. If not provided, a default value is used.
+    pipeline_group : array-like, optional
+        Pipeline group for each survey point. If not provided, a default value is used.
+    group_section_type : array-like, optional
+        Group section type for each survey point. If not provided, a default value is used.
     x : array_like, mandatory
-        The modified eastings or accumulated arc length for all points.
+        Coordinates associated with the signal for each survey point.
+        These can be either anonymised easting values or arc lengths, depending on context.
     y : array_like, mandatory
-        The modified northings or curvilinear curvature (signal) for all points.
+        Signal values for each survey point.
+        These can be either anonymised northing values or curvatures, depending on context.
     cutoff : float or None, mandatory
         Wavelength or curvature cutoff for FFT filtering. If None, no filtering is applied.
     """
     def __init__(
             self,
             *,
-            development,
-            survey_type,
-            pipeline_group,
-            group_section_type,
+            development=None,
+            survey_type=None,
+            pipeline_group=None,
+            group_section_type=None,
             x,
             y,
             cutoff
@@ -1398,10 +1447,22 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
-        self.development = np.asarray(development, dtype=object)
-        self.survey_type = np.asarray(survey_type, dtype=object)
-        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        if development is None:
+            self.development = np.array(['Predefined'], dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.array(['Predefined'], dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         # Initialize group-related attributes
@@ -1818,23 +1879,52 @@ class GaussianSmoother:
     """
     Class to perform Gaussian kernel smoothing on the pipeline survey, grouped by
     (development, survey type, pipeline group, group section type).
+
+    Parameters
+    ----------
+    development : array-like, optional
+        Development identifier for each survey point. If not provided, a default value is used.
+    survey_type : array-like, optional
+        Survey type for each survey point. If not provided, a default value is used.
+    pipeline_group : array-like, optional
+        Pipeline group for each survey point. If not provided, a default value is used.
+    group_section_type : array-like, optional
+        Group section type for each survey point. If not provided, a default value is used.
+    x : array-like
+        Anonymised eastings for each survey point.
+    y : array-like
+        Anonymised northings for each survey point.
+    bandwidth : float
+        Bandwidth for the Gaussian kernel.
     """
     def __init__(
         self,
         *,
-        development,
-        survey_type,
-        pipeline_group,
-        group_section_type,
+        development=None,
+        survey_type=None,
+        pipeline_group=None,
+        group_section_type=None,
         x,
         y,
         bandwidth
     ):
         # Initialize GaussianSmoother attributes
-        self.development = np.asarray(development, dtype=object)
-        self.survey_type = np.asarray(survey_type, dtype=object)
-        self.pipeline_group = np.asarray(pipeline_group, dtype=object)
-        self.group_section_type = np.asarray(group_section_type, dtype=object)
+        if development is None:
+            self.development = np.array(['Predefined'], dtype=object)
+        else:
+            self.development = np.asarray(development, dtype=object)
+        if survey_type is None:
+            self.survey_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.survey_type = np.asarray(survey_type, dtype=object)
+        if pipeline_group is None:
+            self.pipeline_group = np.array(['Predefined'], dtype=object)
+        else:
+            self.pipeline_group = np.asarray(pipeline_group, dtype=object)
+        if group_section_type is None:
+            self.group_section_type = np.array(['Predefined'], dtype=object)
+        else:
+            self.group_section_type = np.asarray(group_section_type, dtype=object)
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         self.bandwidth = bandwidth

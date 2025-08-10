@@ -1,9 +1,6 @@
 '''
 Example script
 '''
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pandas as pd
 import refpy
 
@@ -26,7 +23,7 @@ def example1():
 
     # Import design data
     df = pd.read_excel(
-        'example_1_2.xlsx', sheet_name='Example1', header=None).iloc[1:].transpose()
+        'example_1.xlsx', sheet_name='Example1', header=None).iloc[1:].transpose()
     df.columns = df.iloc[0].to_numpy()
     df = df[1:].reset_index(drop=True)
 
