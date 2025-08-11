@@ -1320,9 +1320,9 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
             tan1_f = v1_f / norm_v1_f if norm_v1_f != 0 else np.zeros_like(v1_f)
             tan2_f = v2_f / norm_v2_f if norm_v2_f != 0 else np.zeros_like(v2_f)
             cross_f = tan1_f[0] * tan2_f[1] - tan1_f[1] * tan2_f[0]
-            arc_length_full_dedup[0] = ds_f
-            angle_full_dedup[0] = np.arctan2(v1_f[1], v1_f[0])
-            curvature_full_dedup[0] = cross_f / ds_f if ds_f != 0 else 0.0
+            arc_length_full_dedup[0] = 0.0 # ds_f
+            angle_full_dedup[0] = 0.0 # np.arctan2(v1_f[1], v1_f[0])
+            curvature_full_dedup[0] = 0.0 # cross_f / ds_f if ds_f != 0 else 0.0
 
             # Central differences for internal points
             p_prev = coords_dedup[:-2]
@@ -1353,9 +1353,9 @@ class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attr
             tan1_b = v1_b / norm_v1_b if norm_v1_b != 0 else np.zeros_like(v1_b)
             tan2_b = v2_b / norm_v2_b if norm_v2_b != 0 else np.zeros_like(v2_b)
             cross_b = tan1_b[0] * tan2_b[1] - tan1_b[1] * tan2_b[0]
-            arc_length_full_dedup[-1] = ds_b
-            angle_full_dedup[-1] = np.arctan2(v2_b[1], v2_b[0])
-            curvature_full_dedup[-1] = cross_b / ds_b if ds_b != 0 else 0.0
+            arc_length_full_dedup[-1] = 0.0 # ds_b
+            angle_full_dedup[-1] = 0.0 # np.arctan2(v2_b[1], v2_b[0])
+            curvature_full_dedup[-1] = 0.0 # cross_b / ds_b if ds_b != 0 else 0.0
 
             # Cumulative arc length
             arc_length_cumsum = np.cumsum(arc_length_full_dedup)

@@ -1,8 +1,6 @@
 '''
 Example script
 '''
-import sys
-sys.path.insert(0, r'C:\DevOps\refpy')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -48,7 +46,6 @@ def data():
     df1['Smooth Coordinate - Frequencies - Filtered'] = fft_smooth.get_freqs()
     df1['Smooth Coordinate - Spectrum - Filtered'] = fft_smooth.get_fft()
     df1['Smooth Coordinate - Cutoff'] = FFT_CUTOFF_WAVELENGTH
-    df1.to_csv('test.csv')
     df2 = pd.DataFrame({
         'Development': fft_smooth.get_psd_development(),
         'Survey Type': fft_smooth.get_psd_survey_type(),
@@ -397,7 +394,7 @@ def plot5(df1, df2):
 ###
 ### Example 2
 ###
-SHEETNAME = 'data1' #Options: 'data1' or 'data2'
+SHEETNAME = 'data2' #Options: 'data1' or 'data2'
 FFT_CUTOFF_WAVELENGTH = 16  # Cutoff of smaller wavelengths in meters
 FFT_CUTOFF_WAVELENGTH_CURVATURE = 16  # Cutoff of smaller wavelengths in meters
 dfe1, dfe2 = data()

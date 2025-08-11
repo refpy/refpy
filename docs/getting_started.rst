@@ -106,7 +106,7 @@ Pipe, DNV, PSI, LBDistributions Example: Demonstrates how to create and use the 
 
    Example 1: Pipe, DNV, PSI and LB Calculations
 
-**The ``example_2a_refpy.py`` and ``example_2b_refpy.py`` scripts contain examples to show:**
+**The ``example_2a_refpy.py`` script contains examples to show:**
 
 OOS Example: Shows how to use the ``OOSAnonymisation``, ``OOSDespiker``, ``OOSCurvature``, ``FFTSmoother``, ``GaussianSmoother`` classes for group-wise signal processing and survey data anonymisation.
 
@@ -149,6 +149,45 @@ OOS Example: Shows how to use the ``OOSAnonymisation``, ``OOSDespiker``, ``OOSCu
    :align: center
 
    Example 2a, Plot 5: Spectral Analysis - Curvatures. This plot visualises the radius of curvature distribution of the survey data, highlighting the noise associated with the survey curvatures.
+
+**The ``example_2b_refpy.py`` script contains examples to show:**
+
+OOS Example - Syntetic Signal: Shows how to use the ``OOSDespiker``, ``OOSCurvature``, ``FFTSmoother``, ``GaussianSmoother`` classes and also shows that works as intended for a syntetic signal.
+
+.. figure:: _static/example_2b_plot1.png
+   :alt: Example 2b Plot 1
+   :width: 600
+   :align: center
+
+   Example 2b, Plot 1: Syntetic signal data integrated by four harmonics of 6.25m, 12.5m, 25m and 50m wavelength.
+
+.. figure:: _static/example_2b_plot2.png
+   :alt: Example 2b Plot 2
+   :width: 600
+   :align: center
+
+   Example 2b, Plot 2: Syntetic signal data integrated by four harmonics of 6.25m, 12.5m, 25m and 50m wavelength. The signal integrated by these four harmonics is compared with a new signals in which the 6.25m and 12.5m wavelength harmonics are filtered/smoothed out using the FFTSmoother
+
+.. figure:: _static/example_2b_plot3.png
+   :alt: Example 2b Plot 3
+   :width: 600
+   :align: center
+
+   Example 2b, Plot 3: Spectral Analysis - Coordinates. This plot visualises the wavelength distribution of the syntetic signal, highlighting the four harmonic peaks.
+
+.. figure:: _static/example_2b_plot4.png
+   :alt: Example 2b Plot 4
+   :width: 600
+   :align: center
+
+   Example 2b, Plot 4: Curvatures Smoothing. In this plot, the original and filtered signal curvatures are compared.
+
+.. figure:: _static/example_2b_plot5.png
+   :alt: Example 2b Plot 5
+   :width: 600
+   :align: center
+
+   Example 2b, Plot 5: Spectral Analysis - Curvatures. This plot visualises the radius of curvature distribution of the syntetic signal, highlighting the noise associated with the syntetic signal curvatures.
 
 **The ``example_3_refpy.py`` script contains examples to illustrate:**
 
