@@ -1066,6 +1066,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             survey_type=None,
             pipeline_group=None,
             group_section_type=None,
+            x,
             y,
             window=11,
             sigma=3.0
@@ -1074,6 +1075,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         Initialize an OOSAnonymisation object with route and survey data.
         """
         # Convert to arrays
+        self.x = np.asarray(x)
         self.y = np.asarray(y)
         self.window = window
         self.sigma = sigma
@@ -1110,13 +1112,14 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         Outliers are replaced with NaN.
         """
         def sigma_clip_filter_mean(values):
-            center = values[len(values) // 2]
+            center_idx = len(values) // 2
+            center = values[center_idx]
             win_mean = np.nanmean(values)
             win_std = np.nanstd(values)
             if win_std == 0 or np.isnan(win_std):
                 return center
             if abs(center - win_mean) > self.sigma * win_std:
-                return win_mean
+                return np.nanmean(np.delete(values, center_idx))
             return center
 
         def sigma_clip_filter_nan(values):
@@ -1129,9 +1132,57 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
                 return np.nan
             return center
 
+        def clip_filter_linear_interpolation(x_g, y_g, window, sigma):
+
+            def sigma_clip_filter_linear_interpolation(x_window, y_window):
+                # Align the windows by shifting and rotating
+                x_shift = x_window - x_window[0]
+                y_shift = y_window - y_window[0]
+                dx = x_shift[-1]
+                dy = y_shift[-1]
+                theta = -np.arctan2(dy, dx)
+                y_aligned = x_shift * np.sin(theta) + y_shift * np.cos(theta)
+                # Calculate the aligned statistics
+                center_idx = len(y_window) // 2
+                center_aligned = y_aligned[center_idx]
+                win_mean_aligned = np.nanmean(y_aligned)
+                win_std_aligned = np.nanstd(y_aligned)
+                # Check for zero standard deviation
+                if win_std_aligned == 0 or np.isnan(win_std_aligned):
+                    return x_window[center_idx], y_window[center_idx]
+                if abs(center_aligned - win_mean_aligned) > sigma * win_std_aligned:
+                    interp_x = np.nanmean(np.delete(x_window, center_idx))
+                    interp_y = np.nanmean(np.delete(y_window, center_idx))
+                    return interp_x, interp_y
+                return x_window[center_idx], y_window[center_idx]
+
+            n = len(y_g)
+            x_g_despiked = np.full_like(x_g, np.nan, dtype=float)
+            y_g_despiked = np.full_like(y_g, np.nan, dtype=float)
+            half_win = window // 2
+
+            for i in range(n):
+                i_start = max(0, i - half_win)
+                i_end = min(n, i + half_win + 1)
+                x_win = x_g[i_start:i_end]
+                y_win = y_g[i_start:i_end]
+                # Pad window if at the edges
+                if len(x_win) < window:
+                    pad_left = half_win - (i - i_start)
+                    pad_right = half_win - (i_end - i - 1)
+                    x_win = np.pad(x_win, (pad_left, pad_right), mode='edge')
+                    y_win = np.pad(y_win, (pad_left, pad_right), mode='edge')
+                x_g_despiked[i], y_g_despiked[i] = (
+                    sigma_clip_filter_linear_interpolation(x_win, y_win)
+                )
+
+            return x_g_despiked, y_g_despiked
+
         # Initialise despiked arrays
         self.y_despike_mean = np.full_like(self.y, np.nan, dtype=float)
         self.y_despike_nan = np.full_like(self.y, np.nan, dtype=float)
+        self.x_despike_linear_interpolation = np.full_like(self.x, np.nan, dtype=float)
+        self.y_despike_linear_interpolation = np.full_like(self.y, np.nan, dtype=float)
 
         for group in self.unique_groups:
 
@@ -1145,9 +1196,13 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
 
             # Get indices and values for the current group
             idx = np.where(mask)[0]
+            x_g = self.x[idx]
             y_g = self.y[idx]
-            if len(y_g) < self.window:
+            n = len(y_g)
+            if n < self.window:
                 self.y_despike_mean[idx] = y_g
+                self.y_despike_nan[idx] = y_g
+                self.y_despike_linear_interpolation[idx] = y_g
                 continue
 
             # Apply sigma clipping filter using a rolling window
@@ -1157,12 +1212,20 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             y_g_despiked_nan = generic_filter(
                 y_g, sigma_clip_filter_nan, size=self.window, mode='nearest'
             )
+            x_g_despiked_linear_interpolation, y_g_despiked_linear_interpolation = (
+                clip_filter_linear_interpolation(
+                    x_g, y_g, self.window, self.sigma
+                )
+            )
             self.y_despike_mean[idx] = y_g_despiked_mean
             self.y_despike_nan[idx] = y_g_despiked_nan
+            self.x_despike_linear_interpolation[idx] = x_g_despiked_linear_interpolation
+            self.y_despike_linear_interpolation[idx] = y_g_despiked_linear_interpolation
 
     def get_y_despike_mean(self):
         """
         Get the despiked y values (i.e., northings or curvatures) for each survey point.
+        Returns the average of the y values within the rolling window when a value is despiked.
 
         Returns
         -------
@@ -1174,6 +1237,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
     def get_y_despike_nan(self):
         """
         Get the despiked y values (i.e., northings or curvatures) for each survey point.
+        Returns NaN when a value is despiked.
 
         Returns
         -------
@@ -1181,6 +1245,23 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             Despiked y values for each survey point.
         """
         return self.y_despike_nan
+
+    def get_x_y_despike_linear_interpolation(self):
+        """
+        Get the despiked y values (i.e., northings or curvatures) for each survey point.
+        Within the rolling window, the starting point is translated to the origin, and the line
+        joining the starting and ending points is rotated to be horizontal.
+        Returns a value obtained by linearly interpolating between the two adjacent points when
+        a point is despiked.
+
+        Returns
+        -------
+        np.ndarray
+            Despiked x values for each survey point.
+        np.ndarray
+            Despiked y values for each survey point.
+        """
+        return self.x_despike_linear_interpolation, self.y_despike_linear_interpolation
 
 class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
@@ -1792,50 +1873,6 @@ class FFTSmoother: # pylint: disable=too-many-arguments, too-many-instance-attri
             Raw FFT values for each survey point.
         """
         return self.fft_raw
-
-    def get_psd_development(self):
-        """
-        Get the PSD development values.
-
-        Returns
-        -------
-        list
-            PSD development values for each group.
-        """
-        return self.psd_development
-
-    def get_psd_survey_type(self):
-        """
-        Get the PSD survey type values.
-
-        Returns
-        -------
-        list
-            PSD survey type values for each group.
-        """
-        return self.psd_survey_type
-
-    def get_psd_pipeline_group(self):
-        """
-        Get the PSD pipeline group values.
-
-        Returns
-        -------
-        list
-            PSD pipeline group values for each group.
-        """
-        return self.psd_pipeline_group
-
-    def get_psd_group_section_type(self):
-        """
-        Get the PSD group section type values.
-
-        Returns
-        -------
-        list
-            PSD group section type values for each group.
-        """
-        return self.psd_group_section_type
 
     def get_psd_freqs(self):
         """
