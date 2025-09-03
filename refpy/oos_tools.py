@@ -9,7 +9,7 @@ pipeline survey and route data.
   data processing and analysis tasks.
 - The `OOSAnonymisation` class processes OOS survey and route data, providing methods for
   cleaning, sectioning, coordinate normalization, and anonymization of pipeline survey datasets.
-- The `OOSDespiker` class implements rolling window sigma-clipping despiking for OOS survey data,
+- The `OOSDespiker` class implements rolling window Hampel filter despiking for OOS survey data,
   removing outliers while preserving data alignment and group structure.
 - The `FFTSmoother` and `GaussianSmoother` class implements group-wise signal processing and
   smoothing (FFT, Gaussian, etc.) for OOS survey data, supporting robust, efficient, and
@@ -1035,8 +1035,8 @@ class OOSAnonymisation: # pylint: disable=too-many-arguments, too-many-instance-
 class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
     This class identifies and removes outlier values from survey data using a rolling window
-    sigma-clipping algorithm. Outliers are replaced with NaN, preserving the original data
-    alignment and group structure.
+    Hampel filter algorithm. Outliers are replaced with the median or NaN, preserving the
+    original data alignment and group structure.
 
     Parameters
     ----------
@@ -1056,8 +1056,6 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         These can be either northing values or curvatures, depending on context.
     window : int, optional
         Size of the rolling window for sigma-clipping (default: 11).
-    sigma : float, optional
-        Sigma threshold for outlier detection (default: 3.0).
     """
     def __init__(
             self,
@@ -1068,8 +1066,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             group_section_type=None,
             x,
             y,
-            window=11,
-            sigma=3.0
+            window=11
         ):
         """
         Initialize an OOSAnonymisation object with route and survey data.
@@ -1078,7 +1075,6 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         self.x = np.asarray(x)
         self.y = np.asarray(y)
         self.window = window
-        self.sigma = sigma
         if development is None:
             self.development = np.full(self.y.size, 'Predefined', dtype=object)
         else:
@@ -1108,53 +1104,10 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
 
     def _process(self):
         """
-        Despike outliers in using a rolling window sigma-clipping algorithm.
-        Outliers are replaced with NaN.
+        Despike outliers in using a rolling window Hampel filter algorithm.
+        Outliers are replaced with median or NaN.
         """
-        def sigma_clip_filter_mean(values):
-            center_idx = len(values) // 2
-            center = values[center_idx]
-            win_mean = 0.0 #np.nanmean(values)
-            win_std = np.nanstd(values)
-            if win_std == 0 or np.isnan(win_std):
-                return center
-            if abs(center - win_mean) > self.sigma * win_std:
-                return np.nanmean(np.delete(values, center_idx))
-            return center
-
-        def sigma_clip_filter_nan(values):
-            center = values[len(values) // 2]
-            win_mean = 0.0 #np.nanmean(values)
-            win_std = np.nanstd(values)
-            if win_std == 0 or np.isnan(win_std):
-                return center
-            if abs(center - win_mean) > self.sigma * win_std:
-                return np.nan
-            return center
-
-        def clip_filter_linear_interpolation(x_g, y_g, window, sigma):
-
-            def sigma_clip_filter_linear_interpolation(x_window, y_window):
-                # Align the windows by shifting and rotating
-                x_shift = x_window - x_window[0]
-                y_shift = y_window - y_window[0]
-                dx = x_shift[-1]
-                dy = y_shift[-1]
-                theta = -np.arctan2(dy, dx)
-                y_aligned = x_shift * np.sin(theta) + y_shift * np.cos(theta)
-                # Calculate the aligned statistics
-                center_idx = len(y_window) // 2
-                center_aligned = y_aligned[center_idx]
-                win_mean_aligned = 0.0 #np.nanmean(y_aligned)
-                win_std_aligned = np.nanstd(y_aligned)
-                # Check for zero standard deviation
-                if win_std_aligned == 0 or np.isnan(win_std_aligned):
-                    return x_window[center_idx], y_window[center_idx]
-                if abs(center_aligned - win_mean_aligned) > sigma * win_std_aligned:
-                    interp_x = np.nanmean(np.delete(x_window, center_idx))
-                    interp_y = np.nanmean(np.delete(y_window, center_idx))
-                    return interp_x, interp_y
-                return x_window[center_idx], y_window[center_idx]
+        def hampel_filter_median_aligned(x_g, y_g, window):
 
             n = len(y_g)
             x_g_despiked = np.full_like(x_g, np.nan, dtype=float)
@@ -1164,25 +1117,63 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             for i in range(n):
                 i_start = max(0, i - half_win)
                 i_end = min(n, i + half_win + 1)
-                x_win = x_g[i_start:i_end]
-                y_win = y_g[i_start:i_end]
-                # Pad window if at the edges
-                if len(x_win) < window:
+                x_window = x_g[i_start:i_end]
+                y_window = y_g[i_start:i_end]
+                if len(x_window) < window:
                     pad_left = half_win - (i - i_start)
                     pad_right = half_win - (i_end - i - 1)
-                    x_win = np.pad(x_win, (pad_left, pad_right), mode='edge')
-                    y_win = np.pad(y_win, (pad_left, pad_right), mode='edge')
-                x_g_despiked[i], y_g_despiked[i] = (
-                    sigma_clip_filter_linear_interpolation(x_win, y_win)
-                )
+                    x_window = np.pad(x_window, (pad_left, pad_right), mode='edge')
+                    y_window = np.pad(y_window, (pad_left, pad_right), mode='edge')
+
+                # Align the window
+                x_shift = x_window - x_window[0]
+                y_shift = y_window - y_window[0]
+                dx = x_shift[-1]
+                dy = y_shift[-1]
+                theta = -np.arctan2(dy, dx)
+                x_aligned = x_shift * np.cos(theta) - y_shift * np.sin(theta)
+                y_aligned = x_shift * np.sin(theta) + y_shift * np.cos(theta)
+                center_idx = len(y_aligned) // 2
+
+                # Hampel on signal
+                m = np.nanmedian(y_aligned)
+                mad = 1.4826 * np.nanmedian(np.abs(y_aligned - m))
+                r = np.abs(y_aligned[center_idx] - m) / np.maximum(mad, 1e-12)
+                spike_sig = r > 3.5
+
+                # Hampel on gradient
+                if np.allclose(x_aligned, x_aligned[0]) or np.any(np.diff(x_aligned) == 0):
+                    g = np.zeros_like(y_aligned)
+                else:
+                    g = np.gradient(y_aligned, x_aligned)
+                mg = np.nanmedian(g)
+                madg = 1.4826 * np.nanmedian(np.abs(g - mg))
+                rg = np.abs(g[center_idx] - mg) / np.maximum(madg, 1e-12)
+                spike_grad = rg > 3.0
+
+                spikes = spike_sig & spike_grad
+
+                # Replace center value if it's a spike
+                if spikes:
+                    # Replace with local median in aligned frame
+                    interp_x = x_aligned[center_idx]
+                    interp_y = m
+                    # Inverse rotation and translation
+                    x_inv = interp_x * np.cos(-theta) - interp_y * np.sin(-theta)
+                    y_inv = interp_x * np.sin(-theta) + interp_y * np.cos(-theta)
+                    x_orig = x_inv + x_window[0]
+                    y_orig = y_inv + y_window[0]
+                    x_g_despiked[i] = x_orig
+                    y_g_despiked[i] = y_orig
+                else:
+                    x_g_despiked[i] = x_window[center_idx]
+                    y_g_despiked[i] = y_window[center_idx]
 
             return x_g_despiked, y_g_despiked
 
         # Initialise despiked arrays
-        self.y_despike_mean = np.full_like(self.y, np.nan, dtype=float)
-        self.y_despike_nan = np.full_like(self.y, np.nan, dtype=float)
-        self.x_despike_linear_interpolation = np.full_like(self.x, np.nan, dtype=float)
-        self.y_despike_linear_interpolation = np.full_like(self.y, np.nan, dtype=float)
+        self.x_despike_mean_aligned = np.full_like(self.x, np.nan, dtype=float)
+        self.y_despike_mean_aligned = np.full_like(self.y, np.nan, dtype=float)
 
         for group in self.unique_groups:
 
@@ -1200,59 +1191,24 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
             y_g = self.y[idx]
             n = len(y_g)
             if n < self.window:
-                self.y_despike_mean[idx] = y_g
-                self.y_despike_nan[idx] = y_g
-                self.y_despike_linear_interpolation[idx] = y_g
+                self.y_despike_mean_aligned[idx] = y_g
                 continue
 
-            # Apply sigma clipping filter using a rolling window
-            y_g_despiked_mean = generic_filter(
-                y_g, sigma_clip_filter_mean, size=self.window, mode='nearest'
-            )
-            y_g_despiked_nan = generic_filter(
-                y_g, sigma_clip_filter_nan, size=self.window, mode='nearest'
-            )
-            x_g_despiked_linear_interpolation, y_g_despiked_linear_interpolation = (
-                clip_filter_linear_interpolation(
-                    x_g, y_g, self.window, self.sigma
+            # Apply Hampel filter using a rolling window
+            x_g_despiked_mean_aligned, y_g_despiked_mean_aligned = (
+                hampel_filter_median_aligned(
+                    x_g, y_g, self.window
                 )
             )
-            self.y_despike_mean[idx] = y_g_despiked_mean
-            self.y_despike_nan[idx] = y_g_despiked_nan
-            self.x_despike_linear_interpolation[idx] = x_g_despiked_linear_interpolation
-            self.y_despike_linear_interpolation[idx] = y_g_despiked_linear_interpolation
+            self.x_despike_mean_aligned[idx] = x_g_despiked_mean_aligned
+            self.y_despike_mean_aligned[idx] = y_g_despiked_mean_aligned
 
-    def get_y_despike_mean(self):
-        """
-        Get the despiked y values (i.e., northings or curvatures) for each survey point.
-        Returns the average of the y values within the rolling window when a value is despiked.
-
-        Returns
-        -------
-        np.ndarray
-            Despiked y values for each survey point.
-        """
-        return self.y_despike_mean
-
-    def get_y_despike_nan(self):
-        """
-        Get the despiked y values (i.e., northings or curvatures) for each survey point.
-        Returns NaN when a value is despiked.
-
-        Returns
-        -------
-        np.ndarray
-            Despiked y values for each survey point.
-        """
-        return self.y_despike_nan
-
-    def get_x_y_despike_linear_interpolation(self):
+    def get_x_y_despike_median_algined(self):
         """
         Get the despiked y values (i.e., northings or curvatures) for each survey point.
         Within the rolling window, the starting point is translated to the origin, and the line
         joining the starting and ending points is rotated to be horizontal.
-        Returns a value obtained by linearly interpolating between the two adjacent points when
-        a point is despiked.
+        Returns the median of the x and y values within the window.
 
         Returns
         -------
@@ -1261,7 +1217,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         np.ndarray
             Despiked y values for each survey point.
         """
-        return self.x_despike_linear_interpolation, self.y_despike_linear_interpolation
+        return self.x_despike_mean_aligned, self.y_despike_mean_aligned
 
 class OOSCurvature: # pylint: disable=too-many-arguments, too-many-instance-attributes, too-many-locals
     """
