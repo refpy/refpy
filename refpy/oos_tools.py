@@ -1114,7 +1114,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         def sigma_clip_filter_mean(values):
             center_idx = len(values) // 2
             center = values[center_idx]
-            win_mean = np.nanmean(values)
+            win_mean = 0.0 #np.nanmean(values)
             win_std = np.nanstd(values)
             if win_std == 0 or np.isnan(win_std):
                 return center
@@ -1124,7 +1124,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
 
         def sigma_clip_filter_nan(values):
             center = values[len(values) // 2]
-            win_mean = np.nanmean(values)
+            win_mean = 0.0 #np.nanmean(values)
             win_std = np.nanstd(values)
             if win_std == 0 or np.isnan(win_std):
                 return center
@@ -1145,7 +1145,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
                 # Calculate the aligned statistics
                 center_idx = len(y_window) // 2
                 center_aligned = y_aligned[center_idx]
-                win_mean_aligned = np.nanmean(y_aligned)
+                win_mean_aligned = 0.0 #np.nanmean(y_aligned)
                 win_std_aligned = np.nanstd(y_aligned)
                 # Check for zero standard deviation
                 if win_std_aligned == 0 or np.isnan(win_std_aligned):
