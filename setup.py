@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="refpy",
-    version="0.1.22",
+    version="0.1.23",
     description="Package for subsea pipelines and risers design in Python",
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
