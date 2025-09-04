@@ -1109,6 +1109,12 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
         """
         def hampel_filter_median_aligned(x_g, y_g, window):
 
+            def backward_gradient(y, x):
+                grad = np.empty_like(y)
+                grad[0] = (y[1] - y[0]) / (x[1] - x[0])  # forward difference at start
+                grad[1:] = (y[1:] - y[:-1]) / (x[1:] - x[:-1])  # backward difference for others
+                return grad
+
             n = len(y_g)
             x_g_despiked = np.full_like(x_g, np.nan, dtype=float)
             y_g_despiked = np.full_like(y_g, np.nan, dtype=float)
@@ -1145,7 +1151,7 @@ class OOSDespiker: # pylint: disable=too-many-arguments, too-many-instance-attri
                 if np.allclose(x_aligned, x_aligned[0]) or np.any(np.diff(x_aligned) == 0):
                     g = np.zeros_like(y_aligned)
                 else:
-                    g = np.gradient(y_aligned, x_aligned)
+                    g = backward_gradient(y_aligned, x_aligned)
                 mg = np.nanmedian(g)
                 madg = 1.4826 * np.nanmedian(np.abs(g - mg))
                 rg = np.abs(g[center_idx] - mg) / np.maximum(madg, 1e-12)
